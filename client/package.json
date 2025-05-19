@@ -1,0 +1,13 @@
+{
+  "name": "client",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node server/webServer.js",
+    "server": "nodemon server/webServer.js",
+    "client": "npm start --prefix client",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "lint": "eslint server/**/*.js client/src/**/*.js",
+    "seed": "node server/loadDatabase.js"
+  }
+}
