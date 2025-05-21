@@ -10,21 +10,30 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
 
 const CommentForm = ({ photoId, onAddComment, showAlert }) => {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [mentionedUsers, setMentionedUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [error, setError] = useState(null);
   
   // Fetch users for @mentions
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        setLoadingUsers(true);
+        setError(null);
         const res = await axios.get('/users');
         setUsers(res.data);
+        setLoadingUsers(false);
       } catch (err) {
         console.error('Error fetching users for mentions:', err);
+        setError('Error loading users for mentions');
+        setLoadingUsers(false);
       }
     };
     
@@ -39,7 +48,24 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
     // Add username to the text at cursor position
     if (user) {
       setText((prevText) => `${prevText} @${user.username} `);
-      setMentionedUsers([...mentionedUsers, user]);
+      
+      // Only add user if not already mentioned
+      if (!mentionedUsers.some(u => u._id === user._id)) {
+        setMentionedUsers([...mentionedUsers, user]);
+      }
+    }
+  };
+  
+  const handleRemoveMention = (userId) => {
+    // Remove the mention chip
+    const updatedMentions = mentionedUsers.filter(u => u._id !== userId);
+    setMentionedUsers(updatedMentions);
+    
+    // Remove the @username from the text
+    const userToRemove = mentionedUsers.find(u => u._id === userId);
+    if (userToRemove) {
+      const regex = new RegExp(`@${userToRemove.username}\\s`, 'g');
+      setText(text.replace(regex, ''));
     }
   };
   
@@ -53,7 +79,13 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
     setLoading(true);
     
     try {
-      const res = await axios.post(`/comments/${photoId}`, { text });
+      // Create an array of mentioned user IDs to send to the server
+      const mentionIds = mentionedUsers.map(user => user._id);
+      
+      const res = await axios.post(`/comments/${photoId}`, { 
+        text,
+        mentions: mentionIds
+      });
       
       // Clear form
       setText('');
@@ -61,6 +93,8 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
       
       // Update parent component
       onAddComment(photoId, res.data);
+      
+      showAlert('Comment added successfully', 'success');
     } catch (err) {
       console.error('Error adding comment:', err);
       showAlert(
@@ -74,6 +108,12 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
   
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      
       <TextField
         fullWidth
         label="Add a comment"
@@ -83,6 +123,7 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
         rows={2}
         variant="outlined"
         disabled={loading}
+        placeholder="Type your comment here. Use @username to mention users."
       />
       
       <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, mb: 1 }}>
@@ -107,10 +148,21 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
               size="small" 
               label="@username" 
               sx={{ minWidth: 200 }}
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {loadingUsers ? <CircularProgress color="inherit" size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
             />
           )}
           onChange={(event, newValue) => handleUserMention(newValue)}
+          loading={loadingUsers}
           sx={{ mr: 2 }}
+          disabled={loading}
         />
         
         <Button 
@@ -119,7 +171,7 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
           color="primary" 
           disabled={loading || !text.trim()}
         >
-          Post
+          {loading ? <CircularProgress size={24} /> : 'Post'}
         </Button>
       </Box>
       
@@ -130,10 +182,9 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
               key={user._id}
               label={`@${user.username}`}
               size="small"
-              onDelete={() => {
-                setMentionedUsers(mentionedUsers.filter(u => u._id !== user._id));
-                setText(text.replace(`@${user.username}`, ''));
-              }}
+              onDelete={() => handleRemoveMention(user._id)}
+              color="primary"
+              variant="outlined"
             />
           ))}
         </Box>

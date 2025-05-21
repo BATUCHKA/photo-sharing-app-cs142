@@ -1,6 +1,6 @@
 // client/src/pages/UserDetail.js
 import React, { useState, useEffect, useContext } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
@@ -22,6 +22,8 @@ import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 import CardContent from '@mui/material/CardContent';
 import CardActionArea from '@mui/material/CardActionArea';
+import Alert from '@mui/material/Alert';
+import Container from '@mui/material/Container';
 
 // Icons
 import PersonIcon from '@mui/icons-material/Person';
@@ -31,31 +33,43 @@ import PhotoIcon from '@mui/icons-material/Photo';
 import CommentIcon from '@mui/icons-material/Comment';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
+import EmailIcon from '@mui/icons-material/Email';
 
 const UserDetail = ({ showAlert }) => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user: currentUser, deleteAccount } = useContext(AuthContext);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   
   useEffect(() => {
     const fetchUserData = async () => {
       try {
+        console.log('Fetching user data for ID:', id);
+        setLoading(true);
+        setError(null);
+        
         const res = await axios.get(`/users/${id}`);
+        console.log('User data response:', res.data);
+        
         setUserData(res.data);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching user data:', err);
+        setError(err.response?.data?.error || 'Error fetching user data');
+        setLoading(false);
         showAlert(
           err.response?.data?.error || 'Error fetching user data', 
           'error'
         );
-        setLoading(false);
       }
     };
     
-    fetchUserData();
+    if (id) {
+      fetchUserData();
+    }
   }, [id, showAlert]);
   
   const handleDeleteAccount = async () => {
@@ -64,8 +78,9 @@ const UserDetail = ({ showAlert }) => {
       
       if (result.success) {
         showAlert('Account deleted successfully', 'success');
+        navigate('/login');
       } else {
-        showAlert(result.error, 'error');
+        showAlert(result.error || 'Failed to delete account', 'error');
       }
     } catch (err) {
       console.error('Error deleting account:', err);
@@ -80,19 +95,36 @@ const UserDetail = ({ showAlert }) => {
         justifyContent="center" 
         alignItems="center" 
         minHeight="80vh"
+        mt={10} // Added margin top to account for navbar
       >
         <CircularProgress />
       </Box>
     );
   }
   
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 10 }}> {/* Added margin top */}
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" component={Link} to="/home">
+          Back to Home
+        </Button>
+      </Container>
+    );
+  }
+  
   if (!userData || !userData.user) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Container maxWidth="lg" sx={{ mt: 10 }}> {/* Added margin top */}
         <Typography variant="h5" color="error">
           User not found
         </Typography>
-      </Box>
+        <Button variant="contained" component={Link} to="/home" sx={{ mt: 2 }}>
+          Back to Home
+        </Button>
+      </Container>
     );
   }
   
@@ -100,29 +132,46 @@ const UserDetail = ({ showAlert }) => {
   const isOwnProfile = currentUser?._id === userInfo._id;
   
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Container maxWidth="lg" sx={{ mt: 10 }}> {/* Added margin top and Container for better layout */}
       <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'center', sm: 'flex-start' } }}>
           <Avatar 
-            sx={{ width: 100, height: 100, mr: 3, fontSize: '2rem' }}
+            sx={{ 
+              width: 100, 
+              height: 100, 
+              mr: { xs: 0, sm: 3 }, 
+              mb: { xs: 2, sm: 0 }, 
+              fontSize: '2rem',
+              bgcolor: 'primary.main'
+            }}
           >
-            {userInfo.firstName[0]}{userInfo.lastName[0]}
+            {userInfo.firstName && userInfo.lastName ? 
+              `${userInfo.firstName[0]}${userInfo.lastName[0]}` : 'U'}
           </Avatar>
           
-          <Box sx={{ flexGrow: 1 }}>
+          <Box sx={{ flexGrow: 1, textAlign: { xs: 'center', sm: 'left' } }}>
             <Typography variant="h4" component="h1">
               {userInfo.firstName} {userInfo.lastName}
             </Typography>
             
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
               <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
               <Typography variant="body1" color="text.secondary">
                 @{userInfo.username}
               </Typography>
             </Box>
             
+            {userInfo.email && (
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+                <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                <Typography variant="body1" color="text.secondary">
+                  {userInfo.email}
+                </Typography>
+              </Box>
+            )}
+            
             {userInfo.location && (
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
                 <LocationOnIcon sx={{ mr: 1, color: 'text.secondary' }} />
                 <Typography variant="body1" color="text.secondary">
                   {userInfo.location}
@@ -131,7 +180,7 @@ const UserDetail = ({ showAlert }) => {
             )}
             
             {userInfo.occupation && (
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
                 <WorkIcon sx={{ mr: 1, color: 'text.secondary' }} />
                 <Typography variant="body1" color="text.secondary">
                   {userInfo.occupation}
@@ -157,6 +206,7 @@ const UserDetail = ({ showAlert }) => {
             component={Link}
             to={`/photos/user/${userInfo._id}`}
             startIcon={<PhotoIcon />}
+            sx={{ mt: { xs: 2, sm: 0 } }}
           >
             View Photos
           </Button>
@@ -322,7 +372,7 @@ const UserDetail = ({ showAlert }) => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Container>
   );
 };
 

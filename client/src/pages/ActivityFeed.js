@@ -18,6 +18,7 @@ import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 import IconButton from '@mui/material/IconButton';
+import Alert from '@mui/material/Alert';
 
 // Icons
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -30,15 +31,19 @@ import LogoutIcon from '@mui/icons-material/Logout';
 const ActivityFeed = ({ showAlert }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshInterval, setRefreshInterval] = useState(null);
   
   const fetchActivities = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await axios.get('/activities?limit=5');
       setActivities(res.data);
       setLoading(false);
     } catch (err) {
       console.error('Error fetching activities:', err);
+      setError('Error fetching activities. Please try again.');
       showAlert(
         err.response?.data?.error || 'Error fetching activities', 
         'error'
@@ -47,9 +52,33 @@ const ActivityFeed = ({ showAlert }) => {
     }
   };
   
+  // Initial fetch
   useEffect(() => {
     fetchActivities();
+    
+    // Start auto-refresh interval (every 30 seconds)
+    const interval = setInterval(() => {
+      fetchActivities();
+    }, 30000);
+    
+    setRefreshInterval(interval);
+    
+    // Cleanup interval on unmount
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
   }, [showAlert]);
+  
+  // Clear interval when component unmounts
+  useEffect(() => {
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
+  }, [refreshInterval]);
   
   const handleRefresh = () => {
     fetchActivities();
@@ -75,6 +104,10 @@ const ActivityFeed = ({ showAlert }) => {
   
   // Format activity text based on type
   const formatActivityText = (activity) => {
+    if (!activity.user) {
+      return 'Unknown activity';
+    }
+    
     const userName = `${activity.user.firstName} ${activity.user.lastName}`;
     
     switch (activity.type) {
@@ -90,6 +123,26 @@ const ActivityFeed = ({ showAlert }) => {
         return `${userName} logged out`;
       default:
         return 'Unknown activity';
+    }
+  };
+  
+  // Calculate relative time
+  const getRelativeTime = (date) => {
+    const now = new Date();
+    const activityDate = new Date(date);
+    const diffInSeconds = Math.floor((now - activityDate) / 1000);
+    
+    if (diffInSeconds < 60) {
+      return 'just now';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
     }
   };
   
@@ -118,13 +171,20 @@ const ActivityFeed = ({ showAlert }) => {
             startIcon={<RefreshIcon />} 
             onClick={handleRefresh}
             disabled={loading}
+            variant="outlined"
           >
-            Refresh
+            {loading ? <CircularProgress size={24} /> : 'Refresh'}
           </Button>
         </Box>
       </Paper>
       
-      {loading ? (
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+      
+      {loading && activities.length > 0 ? (
         <Box display="flex" justifyContent="center" p={3}>
           <CircularProgress />
         </Box>
@@ -136,7 +196,7 @@ const ActivityFeed = ({ showAlert }) => {
         <Paper elevation={2}>
           <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
             {activities.map((activity, index) => (
-              <React.Fragment key={activity._id}>
+              <React.Fragment key={activity._id || index}>
                 <ListItem 
                   alignItems="flex-start"
                   sx={{ py: 2 }}
@@ -144,7 +204,7 @@ const ActivityFeed = ({ showAlert }) => {
                   <ListItemAvatar>
                     <Avatar 
                       component={Link} 
-                      to={`/users/${activity.user._id}`}
+                      to={`/users/${activity.user?._id}`}
                       sx={{ bgcolor: 
                         activity.type === 'PHOTO_UPLOAD' ? 'primary.main' : 
                         activity.type === 'COMMENT_ADDED' ? 'secondary.main' : 
@@ -157,15 +217,17 @@ const ActivityFeed = ({ showAlert }) => {
                   <ListItemText
                     primary={
                       <Typography component="span" variant="body1">
-                        <Link 
-                          to={`/users/${activity.user._id}`}
-                          style={{ textDecoration: 'none', color: 'inherit', fontWeight: 'bold' }}
-                        >
-                          {activity.user.firstName} {activity.user.lastName}
-                        </Link>
+                        {activity.user && (
+                          <Link 
+                            to={`/users/${activity.user._id}`}
+                            style={{ textDecoration: 'none', color: 'inherit', fontWeight: 'bold' }}
+                          >
+                            {activity.user.firstName} {activity.user.lastName}
+                          </Link>
+                        )}
                         {' • '}
                         <Typography component="span" variant="body2" color="text.secondary">
-                          {new Date(activity.date).toLocaleString()}
+                          {getRelativeTime(activity.date)}
                         </Typography>
                       </Typography>
                     }
@@ -179,7 +241,7 @@ const ActivityFeed = ({ showAlert }) => {
                           <Card sx={{ maxWidth: 300 }}>
                             <CardMedia
                               component={Link}
-                              to={`/photos/user/${activity.user._id}`}
+                              to={`/photos/user/${activity.user?._id}`}
                               sx={{ 
                                 height: 150,
                                 backgroundSize: 'cover',
@@ -223,6 +285,10 @@ const ActivityFeed = ({ showAlert }) => {
           </List>
         </Paper>
       )}
+      
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+        Activities refresh automatically every 30 seconds
+      </Typography>
     </Box>
   );
 };

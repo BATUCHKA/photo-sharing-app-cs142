@@ -10,7 +10,7 @@ const auth = require('../middleware/auth');
 // Add a comment to a photo
 router.post('/:photoId', auth, async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, mentions } = req.body;
     
     // Validate text
     if (!text || text.trim() === '') {
@@ -28,15 +28,22 @@ router.post('/:photoId', auth, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to comment on this photo' });
     }
     
-    // Parse mentions from the comment text
-    const mentionedUsernames = Comment.parseMentions(text);
-    const mentions = [];
+    // Process mentions
+    let mentionIds = [];
     
-    // Find mentioned users
-    for (const username of mentionedUsernames) {
-      const mentionedUser = await User.findOne({ username });
-      if (mentionedUser) {
-        mentions.push(mentionedUser._id);
+    // If mentions are explicitly provided in the request
+    if (mentions && Array.isArray(mentions)) {
+      mentionIds = mentions;
+    } else {
+      // Parse mentions from the comment text
+      const mentionedUsernames = Comment.parseMentions(text);
+      
+      // Find mentioned users
+      for (const username of mentionedUsernames) {
+        const mentionedUser = await User.findOne({ username });
+        if (mentionedUser) {
+          mentionIds.push(mentionedUser._id);
+        }
       }
     }
     
@@ -45,7 +52,7 @@ router.post('/:photoId', auth, async (req, res) => {
       photo: req.params.photoId,
       user: req.user.id,
       text,
-      mentions
+      mentions: mentionIds
     });
     
     await newComment.save();
@@ -54,7 +61,7 @@ router.post('/:photoId', auth, async (req, res) => {
     photo.comments.push(newComment._id);
     
     // Add mentioned users to photo
-    for (const mentionId of mentions) {
+    for (const mentionId of mentionIds) {
       if (!photo.mentions.includes(mentionId)) {
         photo.mentions.push(mentionId);
       }
@@ -106,19 +113,48 @@ router.delete('/:id', auth, async (req, res) => {
       }
     }
     
-    // Remove comment from photo
-    await Photo.updateOne(
-      { _id: comment.photo },
-      { $pull: { comments: comment._id } }
-    );
+    // Find the photo to remove the comment from it
+    const photo = await Photo.findById(comment.photo);
+    if (photo) {
+      // Remove comment from photo
+      photo.comments = photo.comments.filter(
+        id => id.toString() !== comment._id.toString()
+      );
+      await photo.save();
+    }
     
     // Delete activities related to this comment
     await Activity.deleteMany({ comment: comment._id });
     
     // Delete comment
-    await comment.remove();
+    await Comment.findByIdAndDelete(comment._id);
     
     res.json({ message: 'Comment deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get comments for a photo
+router.get('/photo/:photoId', auth, async (req, res) => {
+  try {
+    const photo = await Photo.findById(req.params.photoId);
+    if (!photo) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+    
+    // Check if user can view the photo
+    if (!photo.canBeViewedBy(req.user.id)) {
+      return res.status(403).json({ error: 'Not authorized to view comments for this photo' });
+    }
+    
+    const comments = await Comment.find({ photo: req.params.photoId })
+      .sort({ dateCreated: 1 })
+      .populate('user', 'firstName lastName username')
+      .populate('mentions', 'firstName lastName username');
+    
+    res.json(comments);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

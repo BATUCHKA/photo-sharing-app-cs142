@@ -71,6 +71,7 @@ export const AuthProvider = ({ children }) => {
             payload: res.data
           });
         } catch (err) {
+          console.error('Error loading user:', err);
           dispatch({ type: 'AUTH_ERROR' });
         }
       } else {
@@ -88,7 +89,18 @@ export const AuthProvider = ({ children }) => {
 
       dispatch({
         type: 'REGISTER_SUCCESS',
-        payload: res.data
+        payload: {
+          token: res.data.token,
+          user: {
+            _id: res.data.user.id,
+            firstName: res.data.user.firstName,
+            lastName: res.data.user.lastName,
+            username: res.data.user.username,
+            location: res.data.user.location,
+            occupation: res.data.user.occupation,
+            description: res.data.user.description
+          }
+        }
       });
 
       return { success: true };
@@ -113,11 +125,23 @@ export const AuthProvider = ({ children }) => {
 
       dispatch({
         type: 'LOGIN_SUCCESS',
-        payload: res.data
+        payload: {
+          token: res.data.token,
+          user: {
+            _id: res.data.user.id,
+            firstName: res.data.user.firstName,
+            lastName: res.data.user.lastName,
+            username: res.data.user.username,
+            location: res.data.user.location,
+            occupation: res.data.user.occupation,
+            description: res.data.user.description
+          }
+        }
       });
 
       return { success: true };
     } catch (err) {
+      console.error('Login error:', err);
       dispatch({
         type: 'LOGIN_FAIL'
       });
@@ -141,6 +165,7 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'LOGOUT' });
       return { success: true };
     } catch (err) {
+      console.error('Logout error:', err);
       dispatch({ type: 'LOGOUT' });
       return { success: true }; // Always logout on client side even if server fails
     }

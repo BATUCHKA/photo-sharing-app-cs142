@@ -26,8 +26,12 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Chip from '@mui/material/Chip';
 import OutlinedInput from '@mui/material/OutlinedInput';
+import Switch from '@mui/material/Switch';
+import Alert from '@mui/material/Alert';
+import Tooltip from '@mui/material/Tooltip';
 
 // Icons
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -35,6 +39,11 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import PeopleIcon from '@mui/icons-material/People';
+import PersonIcon from '@mui/icons-material/Person';
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 
 // Components
 import CommentList from '../components/comments/CommentList';
@@ -48,13 +57,18 @@ const Home = ({ showAlert }) => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [caption, setCaption] = useState('');
+  const [useVisibilityControl, setUseVisibilityControl] = useState(false);
   const [sharedWith, setSharedWith] = useState([]);
   const [commentsVisible, setCommentsVisible] = useState({});
+  const [error, setError] = useState(null);
   
   // Effect to fetch photos and users when component mounts
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
         const [photosRes, usersRes] = await Promise.all([
           axios.get('/photos'),
           axios.get('/users')
@@ -65,6 +79,7 @@ const Home = ({ showAlert }) => {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
+        setError('Error fetching photos. Please try again later.');
         showAlert('Error fetching photos', 'error');
         setLoading(false);
       }
@@ -83,6 +98,16 @@ const Home = ({ showAlert }) => {
     setCaption(e.target.value);
   };
   
+  // Handle visibility control toggle
+  const handleVisibilityControlToggle = (e) => {
+    setUseVisibilityControl(e.target.checked);
+    
+    // If turning off visibility control, clear shared users
+    if (!e.target.checked) {
+      setSharedWith([]);
+    }
+  };
+  
   // Handle shared users change
   const handleSharedUsersChange = (event) => {
     const { value } = event.target;
@@ -92,14 +117,15 @@ const Home = ({ showAlert }) => {
   // Open upload dialog
   const openUploadDialog = () => {
     setUploadDialogOpen(true);
+    setPhotoFile(null);
+    setCaption('');
+    setUseVisibilityControl(false);
+    setSharedWith([]);
   };
   
   // Close upload dialog
   const closeUploadDialog = () => {
     setUploadDialogOpen(false);
-    setPhotoFile(null);
-    setCaption('');
-    setSharedWith([]);
   };
   
   // Handle photo upload
@@ -113,8 +139,8 @@ const Home = ({ showAlert }) => {
     formData.append('photo', photoFile);
     formData.append('caption', caption);
     
-    // Add shared users if any are selected
-    if (sharedWith.length > 0) {
+    // Add shared users if visibility control is enabled
+    if (useVisibilityControl) {
       formData.append('sharedWith', JSON.stringify(sharedWith));
     }
     
@@ -233,9 +259,45 @@ const Home = ({ showAlert }) => {
     }
   };
   
+  // Add to favorites
+  const handleAddToFavorites = async (photoId) => {
+    try {
+      await axios.post(`/users/favorites/${photoId}`);
+      showAlert('Added to favorites', 'success');
+    } catch (err) {
+      console.error('Error adding to favorites:', err);
+      showAlert(
+        err.response?.data?.error || 'Error adding to favorites', 
+        'error'
+      );
+    }
+  };
+  
   // Check if a photo is liked by the current user
   const isPhotoLikedByUser = (photo) => {
     return photo.likes?.some(like => like._id === user?._id);
+  };
+  
+  // Get visibility icon based on sharing settings
+  const getVisibilityIcon = (photo) => {
+    if (!photo.sharedWith || photo.sharedWith.length === 0) {
+      return <VisibilityIcon fontSize="small" />;
+    } else if (photo.user._id === user?._id || photo.sharedWith.some(u => u._id === user?._id)) {
+      return <PeopleIcon fontSize="small" />;
+    } else {
+      return <VisibilityOffIcon fontSize="small" />;
+    }
+  };
+  
+  // Get visibility text based on sharing settings
+  const getVisibilityText = (photo) => {
+    if (!photo.sharedWith || photo.sharedWith.length === 0) {
+      return 'Public';
+    } else if (photo.sharedWith.length > 0) {
+      return `Shared with ${photo.sharedWith.length} user${photo.sharedWith.length > 1 ? 's' : ''}`;
+    } else {
+      return 'Private';
+    }
   };
   
   if (loading) {
@@ -274,6 +336,12 @@ const Home = ({ showAlert }) => {
         </Button>
       </Box>
       
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+      
       {photos.length === 0 ? (
         <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>
           No photos to display.
@@ -307,7 +375,18 @@ const Home = ({ showAlert }) => {
                       {photo.user.firstName} {photo.user.lastName}
                     </Link>
                   }
-                  subheader={new Date(photo.dateUploaded).toLocaleString()}
+                  subheader={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(photo.dateUploaded).toLocaleString()}
+                      </Typography>
+                      <Tooltip title={getVisibilityText(photo)}>
+                        <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
+                          {getVisibilityIcon(photo)}
+                        </Box>
+                      </Tooltip>
+                    </Box>
+                  }
                 />
                 <CardMedia
                   component="img"
@@ -345,6 +424,18 @@ const Home = ({ showAlert }) => {
                   <Typography variant="body2" color="text.secondary">
                     {photo.comments?.length || 0}
                   </Typography>
+                  
+                  {/* Add to favorites button */}
+                  {photo.user._id !== user?._id && (
+                    <IconButton
+                      aria-label="add to favorites"
+                      onClick={() => handleAddToFavorites(photo._id)}
+                      sx={{ ml: 'auto' }}
+                      color="primary"
+                    >
+                      <BookmarkBorderIcon />
+                    </IconButton>
+                  )}
                 </CardActions>
                 
                 {commentsVisible[photo._id] && (
@@ -406,41 +497,73 @@ const Home = ({ showAlert }) => {
               onChange={handleCaptionChange}
             />
             
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel id="shared-with-label">Share with (optional)</InputLabel>
-              <Select
-                labelId="shared-with-label"
-                id="shared-with"
-                multiple
-                value={sharedWith}
-                onChange={handleSharedUsersChange}
-                input={<OutlinedInput id="select-multiple-chip" label="Share with (optional)" />}
-                renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((userId) => {
-                      const selectedUser = users.find(u => u._id === userId);
-                      return (
-                        <Chip 
-                          key={userId} 
-                          label={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : userId} 
-                        />
-                      );
-                    })}
-                  </Box>
-                )}
-              >
-                {users.filter(u => u._id !== user?._id).map((u) => (
-                  <MenuItem key={u._id} value={u._id}>
-                    {u.firstName} {u.lastName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useVisibilityControl}
+                  onChange={handleVisibilityControlToggle}
+                  color="primary"
+                />
+              }
+              label="Restrict who can see this photo"
+              sx={{ mt: 2, mb: 1 }}
+            />
+            
+            {useVisibilityControl && (
+              <FormControl fullWidth sx={{ mt: 1 }}>
+                <InputLabel id="shared-with-label">
+                  {sharedWith.length === 0 
+                    ? 'Only you can see this photo' 
+                    : 'Share with specific users'}
+                </InputLabel>
+                <Select
+                  labelId="shared-with-label"
+                  id="shared-with"
+                  multiple
+                  value={sharedWith}
+                  onChange={handleSharedUsersChange}
+                  input={<OutlinedInput id="select-multiple-chip" label={sharedWith.length === 0 ? 'Only you can see this photo' : 'Share with specific users'} />}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((userId) => {
+                        const selectedUser = users.find(u => u._id === userId);
+                        return (
+                          <Chip 
+                            key={userId} 
+                            label={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : userId} 
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                >
+                  {users.filter(u => u._id !== user?._id).map((u) => (
+                    <MenuItem key={u._id} value={u._id}>
+                      <Avatar sx={{ width: 24, height: 24, mr: 1 }}>
+                        {u.firstName[0]}{u.lastName[0]}
+                      </Avatar>
+                      {u.firstName} {u.lastName}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
+                  {sharedWith.length === 0 
+                    ? 'If you don\'t select any users, only you will be able to see this photo.' 
+                    : `This photo will be visible to you and ${sharedWith.length} selected user${sharedWith.length > 1 ? 's' : ''}.`}
+                </Typography>
+              </FormControl>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeUploadDialog}>Cancel</Button>
-          <Button onClick={handleUpload} variant="contained">Upload</Button>
+          <Button 
+            onClick={handleUpload} 
+            variant="contained" 
+            disabled={!photoFile}
+          >
+            Upload
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

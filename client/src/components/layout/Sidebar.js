@@ -17,6 +17,7 @@ import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
 import Chip from '@mui/material/Chip';
+import Toolbar from '@mui/material/Toolbar'; // Added for spacing below AppBar
 
 // Icons
 import PersonIcon from '@mui/icons-material/Person';
@@ -70,15 +71,15 @@ const Sidebar = () => {
     
     switch (activity.type) {
       case 'PHOTO_UPLOAD':
-        return <PhotoIcon color="primary" />;
+        return <PhotoIcon color="primary" fontSize="small" />;
       case 'COMMENT_ADDED':
-        return <CommentIcon color="secondary" />;
+        return <CommentIcon color="secondary" fontSize="small" />;
       case 'USER_REGISTERED':
-        return <HowToRegIcon color="success" />;
+        return <HowToRegIcon color="success" fontSize="small" />;
       case 'USER_LOGIN':
-        return <LoginIcon color="info" />;
+        return <LoginIcon color="info" fontSize="small" />;
       case 'USER_LOGOUT':
-        return <LogoutIcon color="error" />;
+        return <LogoutIcon color="error" fontSize="small" />;
       default:
         return null;
     }
@@ -118,23 +119,36 @@ const Sidebar = () => {
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
+          borderRight: '1px solid rgba(0, 0, 0, 0.12)',
+          boxShadow: 'none',
         },
       }}
       variant="permanent"
       anchor="left"
     >
+      <Toolbar /> {/* This empty toolbar pushes content below the AppBar */}
+      
       {user && (
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <Avatar sx={{ mr: 1 }}>{user.firstName[0]}{user.lastName[0]}</Avatar>
-            <Typography variant="h6">
+            <Avatar 
+              sx={{ 
+                mr: 1, 
+                bgcolor: 'primary.main',
+                width: 40,
+                height: 40
+              }}
+            >
+              {user.firstName && user.lastName ? `${user.firstName[0]}${user.lastName[0]}` : 'U'}
+            </Avatar>
+            <Typography variant="h6" noWrap>
               {user.firstName} {user.lastName}
             </Typography>
           </Box>
           {userActivities[user._id] && (
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <Typography variant="caption" sx={{ ml: 1 }}>
-                Last activity: {userActivities[user._id].type.replace('_', ' ').toLowerCase()} {formatActivityTime(userActivities[user._id].date)}
+                Last activity: {userActivities[user._id].type.replace(/_/g, ' ').toLowerCase()} {formatActivityTime(userActivities[user._id].date)}
               </Typography>
             </Box>
           )}
@@ -147,7 +161,10 @@ const Sidebar = () => {
         Users
       </Typography>
       
-      <List>
+      <List sx={{ 
+        maxHeight: 'calc(100vh - 250px)', // Adjust to fit the window
+        overflowY: 'auto'
+      }}>
         {users.map((u) => (
           <ListItem key={u._id} disablePadding>
             <ListItemButton component={Link} to={`/users/${u._id}`}>
@@ -156,8 +173,14 @@ const Sidebar = () => {
                   badgeContent={renderActivityIcon(userActivities[u._id])}
                   overlap="circular"
                 >
-                  <Avatar sx={{ width: 32, height: 32 }}>
-                    {u.firstName[0]}{u.lastName[0]}
+                  <Avatar 
+                    sx={{ 
+                      width: 32, 
+                      height: 32,
+                      bgcolor: u._id === user?._id ? 'primary.main' : 'secondary.main'
+                    }}
+                  >
+                    {u.firstName && u.lastName ? `${u.firstName[0]}${u.lastName[0]}` : 'U'}
                   </Avatar>
                 </Badge>
               </ListItemIcon>
@@ -168,6 +191,15 @@ const Sidebar = () => {
                     ? `${userActivities[u._id].type.replace(/_/g, ' ').toLowerCase()} ${formatActivityTime(userActivities[u._id].date)}` 
                     : 'No recent activity'
                 }
+                primaryTypographyProps={{
+                  variant: 'body2',
+                  noWrap: true,
+                  fontWeight: u._id === user?._id ? 'bold' : 'normal'
+                }}
+                secondaryTypographyProps={{
+                  variant: 'caption',
+                  noWrap: true
+                }}
               />
             </ListItemButton>
           </ListItem>

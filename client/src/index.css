@@ -19,13 +19,15 @@ body {
 .container {
   display: flex;
   flex-grow: 1;
+  padding-top: 64px; /* Add padding for the fixed navbar */
 }
 
 .content {
   flex-grow: 1;
   overflow-y: auto;
-  padding-left: 240px;
-  /* Same as drawer width */
+  padding-left: 240px; /* Same as drawer width */
+  padding-top: 20px; /* Add some spacing at the top */
+  min-height: calc(100vh - 64px); /* Subtract navbar height */
 }
 
 a {

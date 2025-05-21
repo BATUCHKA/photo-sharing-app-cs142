@@ -13,6 +13,8 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
 
 const Login = ({ showAlert }) => {
   const { login, isAuthenticated } = useContext(AuthContext);
@@ -28,8 +30,12 @@ const Login = ({ showAlert }) => {
     password: ''
   });
   
-  const { username, password } = formData;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState('');
   
+  const { username, password } = formData;
+
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -40,8 +46,9 @@ const Login = ({ showAlert }) => {
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setFormErrors({ ...formErrors, [e.target.name]: '' }); // Clear error when typing
+    setError(null); // Clear general error message when typing
   };
-  
+
   const validateForm = () => {
     let valid = true;
     const errors = { username: '', password: '' };
@@ -67,12 +74,35 @@ const Login = ({ showAlert }) => {
       return;
     }
     
-    const result = await login({ username, password });
+    setLoading(true);
+    setError(null);
+    setDebugInfo('');
     
-    if (!result.success) {
-      showAlert(result.error, 'error');
-    } else {
-      showAlert('Logged in successfully', 'success');
+    try {
+      // Add debug info
+      setDebugInfo(`Attempting login with username: ${username}`);
+      
+      const result = await login({ username, password });
+      
+      if (!result.success) {
+        setError(result.error || 'Login failed. Please check your credentials.');
+        if (showAlert) {
+          showAlert(result.error || 'Login failed. Please check your credentials.', 'error');
+        }
+      } else {
+        if (showAlert) {
+          showAlert('Logged in successfully', 'success');
+        }
+        navigate('/home');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An unexpected error occurred. Please try again.');
+      if (showAlert) {
+        showAlert('An unexpected error occurred. Please try again.', 'error');
+      }
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -92,6 +122,13 @@ const Login = ({ showAlert }) => {
           <Typography component="h1" variant="h5">
             Sign in
           </Typography>
+          
+          {error && (
+            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+              {error}
+            </Alert>
+          )}
+          
           <Box component="form" onSubmit={onSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
             <TextField
               margin="normal"
@@ -106,6 +143,7 @@ const Login = ({ showAlert }) => {
               onChange={onChange}
               error={!!formErrors.username}
               helperText={formErrors.username}
+              disabled={loading}
             />
             <TextField
               margin="normal"
@@ -120,15 +158,26 @@ const Login = ({ showAlert }) => {
               onChange={onChange}
               error={!!formErrors.password}
               helperText={formErrors.password}
+              disabled={loading}
             />
+            
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              Default accounts: johndoe / janesmith / bobjohnson
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              Password for all: password123
+            </Typography>
+            
             <Button
               type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              disabled={loading}
             >
-              Sign In
+              {loading ? <CircularProgress size={24} /> : 'Sign In'}
             </Button>
+            
             <Grid container justifyContent="flex-end">
               <Grid item>
                 <Link to="/register" style={{ textDecoration: 'none' }}>
@@ -138,6 +187,12 @@ const Login = ({ showAlert }) => {
                 </Link>
               </Grid>
             </Grid>
+            
+            {debugInfo && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                Debug info: {debugInfo}
+              </Typography>
+            )}
           </Box>
         </Box>
       </Paper>

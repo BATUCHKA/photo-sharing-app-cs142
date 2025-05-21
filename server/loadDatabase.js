@@ -12,13 +12,12 @@ const Activity = require('./models/Activity');
 mongoose.connect('mongodb://localhost:27017/photo-app', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  // useCreateIndex: true,
 })
-.then(() => console.log('MongoDB connected for seeding'))
-.catch(err => {
-  console.error('MongoDB connection error:', err);
-  process.exit(1);
-});
+  .then(() => console.log('MongoDB connected for seeding'))
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 // Sample data
 const users = [
@@ -106,11 +105,11 @@ const sampleImagesDir = path.join(__dirname, 'sample-images');
 const copySampleImages = () => {
   if (fs.existsSync(sampleImagesDir)) {
     const imageFiles = fs.readdirSync(sampleImagesDir);
-    
+
     imageFiles.forEach((file, index) => {
       const sourcePath = path.join(sampleImagesDir, file);
       const targetPath = path.join(uploadsDir, `sample${index + 1}${path.extname(file)}`);
-      
+
       fs.copyFileSync(sourcePath, targetPath);
       console.log(`Copied ${file} to ${targetPath}`);
     });
@@ -127,55 +126,60 @@ const seedDatabase = async () => {
     await Photo.deleteMany({});
     await Comment.deleteMany({});
     await Activity.deleteMany({});
-    
+
     console.log('Database cleared');
-    
-    // Create users
+
+    // Create users - IMPORTANT: Use manual hashing to avoid issues with pre-save hook
     const createdUsers = [];
-    
+
     for (const userData of users) {
+      // Generate a salt and hash the password directly
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(userData.password, salt);
-      
+
+      // Create a new user document directly without relying on the model's pre-save hook
       const user = new User({
         ...userData,
         password: hashedPassword
       });
-      
+
+      // Save the user to the database
       await user.save();
       createdUsers.push(user);
-      
+
+      console.log(`Created user: ${user.username} with password: ${userData.password} (hashed as: ${hashedPassword.substring(0, 10)}...)`);
+
       // Create activity for user registration
       const activity = new Activity({
         user: user._id,
         type: 'USER_REGISTERED',
         date: new Date(Date.now() - Math.floor(Math.random() * 10000000))
       });
-      
+
       await activity.save();
-      
+
       // Update user's last activity
       user.lastActivity = activity._id;
       await user.save();
     }
-    
+
     console.log(`${createdUsers.length} users created`);
-    
+
     // Create photos (distribute among users)
     const createdPhotos = [];
-    
+
     for (let i = 0; i < photos.length; i++) {
       const user = createdUsers[i % createdUsers.length];
-      
+
       const photo = new Photo({
         ...photos[i],
         user: user._id,
         dateUploaded: new Date(Date.now() - Math.floor(Math.random() * 10000000))
       });
-      
+
       await photo.save();
       createdPhotos.push(photo);
-      
+
       // Create activity for photo upload
       const activity = new Activity({
         user: user._id,
@@ -183,45 +187,45 @@ const seedDatabase = async () => {
         photo: photo._id,
         date: photo.dateUploaded
       });
-      
+
       await activity.save();
-      
+
       // Update user's last activity
       user.lastActivity = activity._id;
       await user.save();
     }
-    
+
     console.log(`${createdPhotos.length} photos created`);
-    
+
     // Create comments (2-3 per photo, distributed among users)
     let commentCount = 0;
-    
+
     for (const photo of createdPhotos) {
       const numComments = 2 + Math.floor(Math.random() * 2); // 2-3 comments
-      
+
       for (let i = 0; i < numComments; i++) {
         const randomUser = createdUsers[Math.floor(Math.random() * createdUsers.length)];
         const randomComment = comments[Math.floor(Math.random() * comments.length)];
-        
+
         // Don't let users comment on their own photos
         if (randomUser._id.toString() === photo.user.toString()) {
           continue;
         }
-        
+
         const comment = new Comment({
           photo: photo._id,
           user: randomUser._id,
           text: randomComment,
           dateCreated: new Date(Date.now() - Math.floor(Math.random() * 5000000))
         });
-        
+
         await comment.save();
         commentCount++;
-        
+
         // Add comment to photo
         photo.comments.push(comment._id);
         await photo.save();
-        
+
         // Create activity for comment
         const activity = new Activity({
           user: randomUser._id,
@@ -230,18 +234,30 @@ const seedDatabase = async () => {
           comment: comment._id,
           date: comment.dateCreated
         });
-        
+
         await activity.save();
-        
+
         // Update user's last activity
         randomUser.lastActivity = activity._id;
         await randomUser.save();
       }
     }
-    
+
     console.log(`${commentCount} comments created`);
     console.log('Database seeded successfully');
-    
+
+    // Verify users and passwords
+    console.log('\nVerifying user login credentials:');
+    for (const userData of users) {
+      const user = await User.findOne({ username: userData.username });
+      if (user) {
+        const isMatch = await bcrypt.compare(userData.password, user.password);
+        console.log(`User ${userData.username} verification: ${isMatch ? 'PASSED' : 'FAILED'}`);
+      } else {
+        console.log(`User ${userData.username} not found in database!`);
+      }
+    }
+
   } catch (err) {
     console.error('Error seeding database:', err);
   } finally {

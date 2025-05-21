@@ -12,19 +12,21 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import Avatar from '@mui/material/Avatar'; // Added for user avatar
 import { AuthContext } from '../../context/AuthContext';
 
-const Navbar = ({ toggleDarkMode, darkMode }) => {
+const Navbar = ({ toggleDarkMode, darkMode, showAlert }) => {
   const { isAuthenticated, logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
   
   const handleLogout = async () => {
     await logout();
+    if (showAlert) showAlert('Logged out successfully', 'success');
     navigate('/login');
   };
   
   return (
-    <AppBar position="static">
+    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
       <Toolbar>
         <PhotoCameraIcon sx={{ mr: 2 }} />
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -40,6 +42,7 @@ const Navbar = ({ toggleDarkMode, darkMode }) => {
               component={Link} 
               to="/activities" 
               startIcon={<NotificationsIcon />}
+              sx={{ display: { xs: 'none', sm: 'flex' } }}
             >
               Activities
             </Button>
@@ -48,16 +51,46 @@ const Navbar = ({ toggleDarkMode, darkMode }) => {
               component={Link} 
               to="/favorites" 
               startIcon={<FavoriteIcon />}
+              sx={{ display: { xs: 'none', sm: 'flex' } }}
             >
               Favorites
             </Button>
+            
+            {/* User profile button with avatar */}
             <Button 
               color="inherit" 
               component={Link} 
               to={`/users/${user?._id}`}
+              sx={{ 
+                ml: 1,
+                display: 'flex',
+                alignItems: 'center'
+              }}
             >
-              Profile
+              {user && (
+                <Avatar 
+                  sx={{ 
+                    width: 32, 
+                    height: 32,
+                    mr: 1,
+                    bgcolor: 'secondary.main'
+                  }}
+                >
+                  {user.firstName && user.lastName 
+                    ? `${user.firstName[0]}${user.lastName[0]}`
+                    : 'U'}
+                </Avatar>
+              )}
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  display: { xs: 'none', md: 'block' } 
+                }}
+              >
+                Profile
+              </Typography>
             </Button>
+            
             <Button 
               color="inherit" 
               onClick={handleLogout}
