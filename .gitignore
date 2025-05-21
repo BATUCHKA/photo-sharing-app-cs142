@@ -3,3 +3,6 @@
 /client/node_modules
 /client/build
 /server/uploads
+/bun.lockb
+client/bun.lockb
+server/bun.lockb
