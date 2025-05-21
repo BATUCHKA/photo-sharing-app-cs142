@@ -208,4 +208,76 @@ router.delete('/', auth, async (req, res) => {
   }
 });
 
+
+// Get photos where user is mentioned
+router.get('/:id/mentioned', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Find photos where this user is mentioned
+    const photos = await Photo.find({ mentions: req.params.id })
+      .populate('user', 'firstName lastName username')
+      .sort({ dateUploaded: -1 });
+    
+    // Filter photos based on visibility
+    const visiblePhotos = photos.filter(photo => photo.canBeViewedBy(req.user.id));
+    
+    res.json(visiblePhotos);
+  } catch (err) {
+    console.error('Error fetching mentioned photos:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Search users by name or username (for @mentions autocomplete)
+router.get('/search/:query', auth, async (req, res) => {
+  try {
+    const searchQuery = req.params.query;
+    
+    if (!searchQuery || searchQuery.length < 1) {
+      return res.json([]);
+    }
+    
+    // Create case-insensitive regex for search
+    const searchRegex = new RegExp(searchQuery, 'i');
+    
+    // Find users matching the search query
+    const users = await User.find({
+      $or: [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { username: searchRegex }
+      ]
+    })
+    .select('_id firstName lastName username')
+    .limit(10);
+    
+    res.json(users);
+  } catch (err) {
+    console.error('Error searching users:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all users for mentions dropdown
+router.get('/list/mentions', auth, async (req, res) => {
+  try {
+    // Find all users except the current user
+    const users = await User.find({
+      _id: { $ne: req.user.id }
+    })
+    .select('_id firstName lastName username')
+    .sort({ firstName: 1, lastName: 1 });
+    
+    res.json(users);
+  } catch (err) {
+    console.error('Error fetching users for mentions:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 module.exports = router;

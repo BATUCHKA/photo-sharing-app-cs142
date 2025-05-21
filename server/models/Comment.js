@@ -17,27 +17,28 @@ const CommentSchema = new Schema({
     type: String,
     required: true
   },
-  dateCreated: {
-    type: Date,
-    default: Date.now
-  },
   mentions: [{
     type: Schema.Types.ObjectId,
     ref: 'User'
-  }]
+  }],
+  dateCreated: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-// Static method to parse mentions
-CommentSchema.statics.parseMentions = function(text) {
+// Static method to extract mentions from comment text
+CommentSchema.statics.parseMentions = function (text) {
+  if (!text) return [];
+
+  // Match all @username patterns
   const mentionRegex = /@(\w+)/g;
-  const usernames = [];
-  let match;
-  
-  while ((match = mentionRegex.exec(text)) !== null) {
-    usernames.push(match[1]);
-  }
-  
-  return usernames;
+  const matches = text.match(mentionRegex);
+
+  if (!matches) return [];
+
+  // Extract usernames without @
+  return matches.map(match => match.substring(1));
 };
 
 module.exports = mongoose.model('Comment', CommentSchema);

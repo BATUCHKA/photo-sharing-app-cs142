@@ -21,14 +21,14 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|gif/;
     const mimetype = filetypes.test(file.mimetype);
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     }
@@ -48,16 +48,16 @@ router.get('/', auth, async (req, res) => {
         { user: req.user.id }                // Current user is the owner
       ]
     })
-    .sort({ 
-      'likes.length': -1,      // Sort by likes count (descending)
-      dateUploaded: -1         // Then by upload date (most recent first)
-    })
-    .populate('user', 'firstName lastName username')
-    .populate({
-      path: 'comments',
-      populate: { path: 'user', select: 'firstName lastName username' }
-    });
-    
+      .sort({
+        'likes.length': -1,      // Sort by likes count (descending)
+        dateUploaded: -1         // Then by upload date (most recent first)
+      })
+      .populate('user', 'firstName lastName username')
+      .populate({
+        path: 'comments',
+        populate: { path: 'user', select: 'firstName lastName username' }
+      });
+
     res.json(photos);
   } catch (err) {
     console.error(err);
@@ -78,16 +78,16 @@ router.get('/user/:userId', auth, async (req, res) => {
         { user: req.user.id }                // Current user is the owner
       ]
     })
-    .sort({ 
-      'likes.length': -1,      // Sort by likes count (descending)
-      dateUploaded: -1         // Then by upload date (most recent first)
-    })
-    .populate('user', 'firstName lastName username')
-    .populate({
-      path: 'comments',
-      populate: { path: 'user', select: 'firstName lastName username' }
-    });
-    
+      .sort({
+        'likes.length': -1,      // Sort by likes count (descending)
+        dateUploaded: -1         // Then by upload date (most recent first)
+      })
+      .populate('user', 'firstName lastName username')
+      .populate({
+        path: 'comments',
+        populate: { path: 'user', select: 'firstName lastName username' }
+      });
+
     res.json(photos);
   } catch (err) {
     console.error(err);
@@ -108,16 +108,16 @@ router.get('/:id', auth, async (req, res) => {
       .populate('sharedWith', 'firstName lastName username')
       .populate('mentions', 'firstName lastName username')
       .populate('tags.user', 'firstName lastName username');
-    
+
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
+
     // Check if user has permission to view
     if (!photo.canBeViewedBy(req.user.id)) {
       return res.status(403).json({ error: 'Not authorized to view this photo' });
     }
-    
+
     res.json(photo);
   } catch (err) {
     console.error(err);
@@ -131,23 +131,23 @@ router.post('/', [auth, upload.single('photo')], async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No photo uploaded' });
     }
-    
+
     const { caption, sharedWith } = req.body;
-    
+
     // Create photo object
     const newPhoto = new Photo({
       user: req.user.id,
       file: `/uploads/${req.file.filename}`,
       caption: caption || '',
     });
-    
+
     // Add sharing list if provided
     if (sharedWith && sharedWith.length > 0) {
       // Parse the shared users array if it's a string
-      const sharedUsers = typeof sharedWith === 'string' 
-        ? JSON.parse(sharedWith) 
+      const sharedUsers = typeof sharedWith === 'string'
+        ? JSON.parse(sharedWith)
         : sharedWith;
-        
+
       // Validate that all users exist
       for (const userId of sharedUsers) {
         const user = await User.findById(userId);
@@ -155,30 +155,30 @@ router.post('/', [auth, upload.single('photo')], async (req, res) => {
           return res.status(400).json({ error: `User ${userId} not found` });
         }
       }
-      
+
       newPhoto.sharedWith = sharedUsers;
     }
-    
+
     await newPhoto.save();
-    
+
     // Create activity for photo upload
     const activity = new Activity({
       user: req.user.id,
       type: 'PHOTO_UPLOAD',
       photo: newPhoto._id
     });
-    
+
     await activity.save();
-    
+
     // Update user's last activity
     const user = await User.findById(req.user.id);
     user.lastActivity = activity._id;
     await user.save();
-    
+
     // Populate user data
     const photo = await Photo.findById(newPhoto._id)
       .populate('user', 'firstName lastName username');
-    
+
     res.status(201).json(photo);
   } catch (err) {
     console.error(err);
@@ -190,24 +190,24 @@ router.post('/', [auth, upload.single('photo')], async (req, res) => {
 router.post('/:id/tags', auth, async (req, res) => {
   try {
     const { userId, rect } = req.body;
-    
+
     // Validate user exists
     const taggedUser = await User.findById(userId);
     if (!taggedUser) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     // Get the photo
     const photo = await Photo.findById(req.params.id);
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
+
     // Check if user has permission
     if (photo.user.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to tag this photo' });
     }
-    
+
     // Add the tag
     photo.tags.push({
       user: userId,
@@ -218,13 +218,13 @@ router.post('/:id/tags', auth, async (req, res) => {
         height: rect.height
       }
     });
-    
+
     await photo.save();
-    
+
     // Populate user data in the tag
     const updatedPhoto = await Photo.findById(photo._id)
       .populate('tags.user', 'firstName lastName username');
-    
+
     res.json(updatedPhoto);
   } catch (err) {
     console.error(err);
@@ -232,61 +232,103 @@ router.post('/:id/tags', auth, async (req, res) => {
   }
 });
 
-// Like a photo
 router.post('/:id/like', auth, async (req, res) => {
   try {
     const photo = await Photo.findById(req.params.id);
+
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
-    // Check if photo can be viewed by the user
+
+    // Check if user can view the photo
     if (!photo.canBeViewedBy(req.user.id)) {
-      return res.status(403).json({ error: 'Not authorized to view this photo' });
+      return res.status(403).json({ error: 'Not authorized to like this photo' });
     }
-    
-    // Check if already liked
-    const alreadyLiked = photo.likes.some(id => id.toString() === req.user.id);
-    if (alreadyLiked) {
+
+    // Check if user already liked the photo
+    // Make sure we're checking if the user ID is in the likes array, not the user object
+    if (photo.likes.some(like => like.toString() === req.user.id)) {
       return res.status(400).json({ error: 'Photo already liked' });
     }
-    
-    // Add like
+
+    // Add user to likes array
     photo.likes.push(req.user.id);
     await photo.save();
-    
-    // Get updated photo with populated fields
-    const updatedPhoto = await Photo.findById(photo._id)
+
+    // Create activity for like
+    const activity = new Activity({
+      user: req.user.id,
+      type: 'PHOTO_LIKE',
+      photo: photo._id,
+    });
+
+    await activity.save();
+
+    // Update user's last activity
+    const user = await User.findById(req.user.id);
+    if (user) {
+      user.lastActivity = activity._id;
+      await user.save();
+    }
+
+    // Return the updated photo with populated user data
+    const populatedPhoto = await Photo.findById(photo._id)
       .populate('user', 'firstName lastName username')
-      .populate('likes', 'firstName lastName username');
-    
-    res.json(updatedPhoto);
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName username'
+        }
+      });
+
+    res.json(populatedPhoto);
   } catch (err) {
-    console.error(err);
+    console.error('Error liking photo:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Unlike a photo
+//unlike photo
 router.delete('/:id/like', auth, async (req, res) => {
   try {
     const photo = await Photo.findById(req.params.id);
+
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
-    // Remove like
-    photo.likes = photo.likes.filter(id => id.toString() !== req.user.id);
+
+    // Check if user can view the photo
+    if (!photo.canBeViewedBy(req.user.id)) {
+      return res.status(403).json({ error: 'Not authorized to unlike this photo' });
+    }
+
+    // Check if user has liked the photo
+    if (!photo.likes.some(like => like.toString() === req.user.id)) {
+      return res.status(400).json({ error: 'Photo not liked yet' });
+    }
+
+    // Remove user from likes array
+    photo.likes = photo.likes.filter(
+      like => like.toString() !== req.user.id
+    );
+
     await photo.save();
-    
-    // Get updated photo with populated fields
-    const updatedPhoto = await Photo.findById(photo._id)
+
+    // Return the updated photo with populated user data
+    const populatedPhoto = await Photo.findById(photo._id)
       .populate('user', 'firstName lastName username')
-      .populate('likes', 'firstName lastName username');
-    
-    res.json(updatedPhoto);
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName username'
+        }
+      });
+
+    res.json(populatedPhoto);
   } catch (err) {
-    console.error(err);
+    console.error('Error unliking photo:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -298,27 +340,27 @@ router.delete('/:id', auth, async (req, res) => {
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
+
     // Check if user owns the photo
     if (photo.user.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to delete this photo' });
     }
-    
+
     // Delete all comments on this photo
     await Comment.deleteMany({ photo: photo._id });
-    
+
     // Delete activities related to this photo
     await Activity.deleteMany({ photo: photo._id });
-    
+
     // Delete actual file from the server
     const filePath = path.join(__dirname, '..', photo.file);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
-    
+
     // Delete photo from database
     await photo.remove();
-    
+
     res.json({ message: 'Photo deleted successfully' });
   } catch (err) {
     console.error(err);

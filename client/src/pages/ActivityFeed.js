@@ -270,7 +270,7 @@ const ActivityFeed = ({ showAlert }) => {
                                   backgroundSize: 'cover',
                                   backgroundPosition: 'center',
                                 }}
-                                image={`http://localhost:3000${activity.comment.photo.file}`}
+                                image={`http://localhost:3000/${activity.comment.photo.file}`}
                               />
                             </Card>
                           </Box>

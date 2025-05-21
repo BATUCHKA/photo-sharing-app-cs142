@@ -847,8 +847,6 @@ app.get('/api/activities/user/:userId', auth, async (req, res) => {
   }
 });
 
-// Serve React app for any other routes - IMPORTANT: Use middleware, not wildcard route
-// This fixes the path-to-regexp error by avoiding wildcard routes
 const clientBuildPath = path.join(__dirname, '../client/build');
 if (fs.existsSync(clientBuildPath)) {
   app.use(express.static(clientBuildPath));
@@ -872,3 +870,4 @@ app.listen(port, () => {
 });
 
 module.exports = app;
+

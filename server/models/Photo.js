@@ -12,68 +12,63 @@ const PhotoSchema = new Schema({
     type: String,
     required: true
   },
-  dateUploaded: {
-    type: Date,
-    default: Date.now
-  },
   caption: {
     type: String,
     default: ''
   },
+  dateUploaded: {
+    type: Date,
+    default: Date.now
+  },
+  likes: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   comments: [{
     type: Schema.Types.ObjectId,
     ref: 'Comment'
   }],
-  likes: [{
+  mentions: [{
     type: Schema.Types.ObjectId,
     ref: 'User'
   }],
   sharedWith: [{
     type: Schema.Types.ObjectId,
     ref: 'User'
-  }],
-  mentions: [{
-    type: Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  tags: [{
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    rect: {
-      x: Number,
-      y: Number,
-      width: Number,
-      height: Number
-    }
   }]
 });
 
-// Virtual for like count
-PhotoSchema.virtual('likeCount').get(function() {
-  return this.likes.length;
-});
-
-// Virtual for comment count
-PhotoSchema.virtual('commentCount').get(function() {
-  return this.comments.length;
-});
-
-// Method to check if a user can view this photo
+// Check if user can view the photo
 PhotoSchema.methods.canBeViewedBy = function(userId) {
-  // If no sharing list, anyone can view
+  // Convert userId to string for comparison
+  const userIdStr = userId.toString();
+  const photoOwnerStr = this.user.toString();
+  
+  // Owner can always view
+  if (userIdStr === photoOwnerStr) {
+    return true;
+  }
+  
+  // If sharedWith is not defined or empty, photo is public
   if (!this.sharedWith || this.sharedWith.length === 0) {
     return true;
   }
   
-  // Owner can always view
-  if (this.user.toString() === userId.toString()) {
-    return true;
+  // Check if user is in sharedWith list
+  return this.sharedWith.some(id => id.toString() === userIdStr);
+};
+
+// Check if user has liked the photo
+PhotoSchema.methods.isLikedBy = function(userId) {
+  if (!userId || !this.likes || !Array.isArray(this.likes)) {
+    return false;
   }
   
-  // Check if user is in shared list
-  return this.sharedWith.some(id => id.toString() === userId.toString());
+  // Convert userId to string for comparison
+  const userIdStr = userId.toString();
+  
+  // Check if user ID is in the likes array
+  return this.likes.some(likeId => likeId.toString() === userIdStr);
 };
 
 module.exports = mongoose.model('Photo', PhotoSchema);

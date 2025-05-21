@@ -4,7 +4,6 @@ const router = express.Router();
 const Activity = require('../models/Activity');
 const auth = require('../middleware/auth');
 
-// Get recent activities
 router.get('/', auth, async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : 5;
@@ -26,7 +25,6 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Get recent activities for a specific user
 router.get('/user/:userId', auth, async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : 5;

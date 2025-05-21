@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
 
-// Material UI
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
@@ -17,9 +16,8 @@ import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
 import Chip from '@mui/material/Chip';
-import Toolbar from '@mui/material/Toolbar'; // Added for spacing below AppBar
+import Toolbar from '@mui/material/Toolbar'; 
 
-// Icons
 import PersonIcon from '@mui/icons-material/Person';
 import PhotoIcon from '@mui/icons-material/Photo';
 import CommentIcon from '@mui/icons-material/Comment';
@@ -93,7 +91,6 @@ const Sidebar = () => {
     const activityDate = new Date(date);
     const diffMs = now - activityDate;
     
-    // Convert to minutes, hours, days
     const diffMins = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));

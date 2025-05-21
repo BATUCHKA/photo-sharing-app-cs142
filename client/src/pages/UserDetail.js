@@ -43,39 +43,50 @@ const UserDetail = ({ showAlert }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         console.log('Fetching user data for ID:', id);
         setLoading(true);
         setError(null);
-        
-        const res = await axios.get(`/users/${id}`);
-        console.log('User data response:', res.data);
-        
-        setUserData(res.data);
+
+        // Fetch user data and mentioned photos in parallel
+        const [userRes, mentionedPhotosRes] = await Promise.all([
+          axios.get(`/users/${id}`),
+          axios.get(`/users/${id}/mentioned`) // New endpoint to get photos where user is mentioned
+        ]);
+
+        console.log('User data response:', userRes.data);
+        console.log('Mentioned photos response:', mentionedPhotosRes.data);
+
+        // Update state with both user data and mentioned photos
+        setUserData({
+          ...userRes.data,
+          mentionedPhotos: mentionedPhotosRes.data
+        });
+
         setLoading(false);
       } catch (err) {
         console.error('Error fetching user data:', err);
         setError(err.response?.data?.error || 'Error fetching user data');
         setLoading(false);
         showAlert(
-          err.response?.data?.error || 'Error fetching user data', 
+          err.response?.data?.error || 'Error fetching user data',
           'error'
         );
       }
     };
-    
+
     if (id) {
       fetchUserData();
     }
   }, [id, showAlert]);
-  
+
   const handleDeleteAccount = async () => {
     try {
       const result = await deleteAccount();
-      
+
       if (result.success) {
         showAlert('Account deleted successfully', 'success');
         navigate('/login');
@@ -87,13 +98,13 @@ const UserDetail = ({ showAlert }) => {
       showAlert('Error deleting account', 'error');
     }
   };
-  
+
   if (loading) {
     return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
         minHeight="80vh"
         mt={10} // Added margin top to account for navbar
       >
@@ -101,7 +112,7 @@ const UserDetail = ({ showAlert }) => {
       </Box>
     );
   }
-  
+
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ mt: 10 }}> {/* Added margin top */}
@@ -114,7 +125,7 @@ const UserDetail = ({ showAlert }) => {
       </Container>
     );
   }
-  
+
   if (!userData || !userData.user) {
     return (
       <Container maxWidth="lg" sx={{ mt: 10 }}> {/* Added margin top */}
@@ -127,40 +138,40 @@ const UserDetail = ({ showAlert }) => {
       </Container>
     );
   }
-  
+
   const { user: userInfo, mostRecentPhoto, mostCommentedPhoto, mentionedPhotos, lastActivity } = userData;
   const isOwnProfile = currentUser?._id === userInfo._id;
-  
+
   return (
     <Container maxWidth="lg" sx={{ mt: 10 }}> {/* Added margin top and Container for better layout */}
       <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'center', sm: 'flex-start' } }}>
-          <Avatar 
-            sx={{ 
-              width: 100, 
-              height: 100, 
-              mr: { xs: 0, sm: 3 }, 
-              mb: { xs: 2, sm: 0 }, 
+          <Avatar
+            sx={{
+              width: 100,
+              height: 100,
+              mr: { xs: 0, sm: 3 },
+              mb: { xs: 2, sm: 0 },
               fontSize: '2rem',
               bgcolor: 'primary.main'
             }}
           >
-            {userInfo.firstName && userInfo.lastName ? 
+            {userInfo.firstName && userInfo.lastName ?
               `${userInfo.firstName[0]}${userInfo.lastName[0]}` : 'U'}
           </Avatar>
-          
+
           <Box sx={{ flexGrow: 1, textAlign: { xs: 'center', sm: 'left' } }}>
             <Typography variant="h4" component="h1">
               {userInfo.firstName} {userInfo.lastName}
             </Typography>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
               <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
               <Typography variant="body1" color="text.secondary">
                 @{userInfo.username}
               </Typography>
             </Box>
-            
+
             {userInfo.email && (
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
                 <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
@@ -169,7 +180,7 @@ const UserDetail = ({ showAlert }) => {
                 </Typography>
               </Box>
             )}
-            
+
             {userInfo.location && (
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
                 <LocationOnIcon sx={{ mr: 1, color: 'text.secondary' }} />
@@ -178,7 +189,7 @@ const UserDetail = ({ showAlert }) => {
                 </Typography>
               </Box>
             )}
-            
+
             {userInfo.occupation && (
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
                 <WorkIcon sx={{ mr: 1, color: 'text.secondary' }} />
@@ -187,7 +198,7 @@ const UserDetail = ({ showAlert }) => {
                 </Typography>
               </Box>
             )}
-            
+
             {isOwnProfile && (
               <Button
                 variant="outlined"
@@ -200,7 +211,7 @@ const UserDetail = ({ showAlert }) => {
               </Button>
             )}
           </Box>
-          
+
           <Button
             variant="contained"
             component={Link}
@@ -211,7 +222,7 @@ const UserDetail = ({ showAlert }) => {
             View Photos
           </Button>
         </Box>
-        
+
         {userInfo.description && (
           <Box sx={{ mt: 3 }}>
             <Typography variant="body1">
@@ -220,7 +231,7 @@ const UserDetail = ({ showAlert }) => {
           </Box>
         )}
       </Paper>
-      
+
       <Grid container spacing={4}>
         {/* Recent Activity */}
         <Grid item xs={12} md={6}>
@@ -228,7 +239,7 @@ const UserDetail = ({ showAlert }) => {
             <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
               Recent Activity
             </Typography>
-            
+
             {lastActivity ? (
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -249,14 +260,14 @@ const UserDetail = ({ showAlert }) => {
             )}
           </Paper>
         </Grid>
-        
+
         {/* Recently Uploaded Photo */}
         <Grid item xs={12} md={6}>
           <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
               Most Recently Uploaded Photo
             </Typography>
-            
+
             {mostRecentPhoto ? (
               <Card sx={{ maxWidth: 345 }}>
                 <CardActionArea component={Link} to={`/photos/user/${userInfo._id}`}>
@@ -280,14 +291,14 @@ const UserDetail = ({ showAlert }) => {
             )}
           </Paper>
         </Grid>
-        
+
         {/* Most Commented Photo */}
         <Grid item xs={12} md={6}>
           <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
               Most Commented Photo
             </Typography>
-            
+
             {mostCommentedPhoto ? (
               <Card sx={{ maxWidth: 345 }}>
                 <CardActionArea component={Link} to={`/photos/user/${userInfo._id}`}>
@@ -314,18 +325,18 @@ const UserDetail = ({ showAlert }) => {
             )}
           </Paper>
         </Grid>
-        
+
         {/* @Mentions */}
         <Grid item xs={12} md={6}>
           <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
-              <AlternateEmailIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+            <Typography variant="h6" component="h2" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+              <AlternateEmailIcon sx={{ mr: 1 }} />
               Mentioned In
             </Typography>
-            
-            {mentionedPhotos && mentionedPhotos.length > 0 ? (
+
+            {userData.mentionedPhotos && userData.mentionedPhotos.length > 0 ? (
               <Grid container spacing={2}>
-                {mentionedPhotos.map(photo => (
+                {userData.mentionedPhotos.map(photo => (
                   <Grid item xs={6} sm={4} key={photo._id}>
                     <Card>
                       <CardActionArea component={Link} to={`/photos/user/${photo.user._id}`}>
@@ -334,10 +345,23 @@ const UserDetail = ({ showAlert }) => {
                           height="120"
                           image={`http://localhost:3000${photo.file}`}
                           alt="Mentioned photo"
+                          sx={{ objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://via.placeholder.com/120?text=Photo+Not+Found';
+                          }}
                         />
                         <CardContent sx={{ p: 1 }}>
-                          <Typography variant="caption" noWrap>
+                          <Typography variant="caption" noWrap component={Link} to={`/users/${photo.user._id}`} sx={{
+                            display: 'block',
+                            color: 'primary.main',
+                            textDecoration: 'none',
+                            '&:hover': { textDecoration: 'underline' }
+                          }}>
                             By {photo.user.firstName} {photo.user.lastName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" noWrap>
+                            {new Date(photo.dateUploaded).toLocaleDateString()}
                           </Typography>
                         </CardContent>
                       </CardActionArea>
@@ -346,14 +370,16 @@ const UserDetail = ({ showAlert }) => {
                 ))}
               </Grid>
             ) : (
-              <Typography variant="body2" color="text.secondary">
-                Not mentioned in any photos.
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  Not mentioned in any photos
+                </Typography>
+              </Box>
             )}
           </Paper>
         </Grid>
       </Grid>
-      
+
       {/* Confirm Delete Dialog */}
       <Dialog
         open={confirmDialogOpen}

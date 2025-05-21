@@ -52,27 +52,27 @@ const users = [
 
 const photos = [
   {
-    file: '/uploads/sample1.jpg',
+    file: '/uploads/sample1.jpeg',
     caption: 'Beautiful sunset at the beach',
   },
   {
-    file: '/uploads/sample2.jpg',
+    file: '/uploads/sample2.jpeg',
     caption: 'Downtown skyline',
   },
   {
-    file: '/uploads/sample3.jpg',
+    file: '/uploads/sample3.jpeg',
     caption: 'Mountain hiking trip',
   },
   {
-    file: '/uploads/sample4.jpg',
+    file: '/uploads/sample4.jpeg',
     caption: 'Family picnic',
   },
   {
-    file: '/uploads/sample5.jpg',
+    file: '/uploads/sample5.jpeg',
     caption: 'Concert night',
   },
   {
-    file: '/uploads/sample6.jpg',
+    file: '/uploads/sample6.jpeg',
     caption: 'My new puppy',
   }
 ];

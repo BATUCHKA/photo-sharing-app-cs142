@@ -49,6 +49,11 @@ const UserPhotos = ({ showAlert }) => {
         
         setUserInfo(userRes.data.user);
         setPhotos(photosRes.data);
+        
+        // For debugging purposes
+        console.log('Current user:', currentUser);
+        console.log('Fetched photos:', photosRes.data);
+        
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -61,7 +66,7 @@ const UserPhotos = ({ showAlert }) => {
     };
     
     fetchData();
-  }, [id, showAlert]);
+  }, [id, showAlert, currentUser]);
   
   // Toggle comments visibility for a photo
   const toggleComments = (photoId) => {
@@ -78,11 +83,15 @@ const UserPhotos = ({ showAlert }) => {
       
       if (isLiked) {
         // Unlike
+        console.log('Unliking photo:', photoId);
         res = await axios.delete(`/photos/${photoId}/like`);
       } else {
         // Like
+        console.log('Liking photo:', photoId);
         res = await axios.post(`/photos/${photoId}/like`);
       }
+      
+      console.log('Like toggle response:', res.data);
       
       // Update the photos state with the updated photo
       setPhotos(photos.map(photo => 
@@ -157,7 +166,20 @@ const UserPhotos = ({ showAlert }) => {
   
   // Check if a photo is liked by the current user
   const isPhotoLikedByUser = (photo) => {
-    return photo.likes?.some(like => like._id === currentUser?._id);
+    // Make sure currentUser exists and photo.likes is an array
+    if (!currentUser || !photo.likes || !Array.isArray(photo.likes)) {
+      return false;
+    }
+    
+    // Check if the current user's ID is in the likes array
+    // Some photos might store like objects with user field, others might store just IDs
+    return photo.likes.some(like => 
+      // Handle both cases: like is an object with user field OR like is directly a user ID
+      (like._id === currentUser._id) ||            // If like is user object
+      (like.user && like.user === currentUser._id) || // If like has separate user field
+      (like.user && like.user._id === currentUser._id) || // If like.user is an object
+      (like === currentUser._id)                  // If like is just the user ID string
+    );
   };
   
   if (loading) {
@@ -184,7 +206,7 @@ const UserPhotos = ({ showAlert }) => {
   }
   
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ flexGrow: 1, p: 3, mt: 2 }}>
       <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Button 
@@ -196,7 +218,7 @@ const UserPhotos = ({ showAlert }) => {
             Back to Profile
           </Button>
           
-          <Avatar sx={{ mr: 2 }}>
+          <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
             {userInfo.firstName[0]}{userInfo.lastName[0]}
           </Avatar>
           
@@ -212,78 +234,89 @@ const UserPhotos = ({ showAlert }) => {
         </Typography>
       ) : (
         <Grid container spacing={4}>
-          {photos.map(photo => (
-            <Grid item xs={12} sm={6} md={4} key={photo._id}>
-              <Card sx={{ maxWidth: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardMedia
-                  component="img"
-                  height="300"
-                  image={`http://localhost:3000${photo.file}`}
-                  alt={photo.caption}
-                />
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    {photo.caption}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {new Date(photo.dateUploaded).toLocaleString()}
-                  </Typography>
-                </CardContent>
-                <CardActions disableSpacing>
-                  <IconButton 
-                    aria-label="add to favorites"
-                    onClick={() => handleLikeToggle(photo._id, isPhotoLikedByUser(photo))}
-                    color={isPhotoLikedByUser(photo) ? 'secondary' : 'default'}
-                  >
-                    {isPhotoLikedByUser(photo) ? (
-                      <FavoriteIcon />
-                    ) : (
-                      <FavoriteBorderIcon />
-                    )}
-                  </IconButton>
-                  <Typography variant="body2" color="text.secondary">
-                    {photo.likes?.length || 0}
-                  </Typography>
-                  <IconButton 
-                    aria-label="comments"
-                    onClick={() => toggleComments(photo._id)}
-                    sx={{ ml: 1 }}
-                  >
-                    <ChatBubbleOutlineIcon />
-                  </IconButton>
-                  <Typography variant="body2" color="text.secondary">
-                    {photo.comments?.length || 0}
-                  </Typography>
-                  
-                  {photo.user._id === currentUser?._id && (
+          {photos.map(photo => {
+            // Debug info about the photo likes
+            const liked = isPhotoLikedByUser(photo);
+            console.log(`Photo ${photo._id} liked status:`, liked);
+            console.log(`Photo ${photo._id} likes:`, photo.likes);
+            
+            return (
+              <Grid item xs={12} sm={6} md={4} key={photo._id}>
+                <Card sx={{ maxWidth: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <CardMedia
+                    component="img"
+                    height="300"
+                    image={`http://localhost:3000${photo.file}`}
+                    alt={photo.caption}
+                    sx={{ 
+                      objectFit: 'cover',
+                      backgroundColor: 'rgba(0,0,0,0.05)'
+                    }}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/300?text=Photo+Not+Found';
+                    }}
+                  />
+                  <CardContent>
+                    <Typography variant="body2" color="text.secondary">
+                      {photo.caption}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {new Date(photo.dateUploaded).toLocaleString()}
+                    </Typography>
+                  </CardContent>
+                  <CardActions disableSpacing>
                     <IconButton 
-                      aria-label="delete"
-                      onClick={() => handleDeletePhoto(photo._id)}
-                      sx={{ ml: 'auto' }}
+                      aria-label={liked ? 'unlike' : 'like'}
+                      onClick={() => handleLikeToggle(photo._id, liked)}
+                      color={liked ? 'secondary' : 'default'}
                     >
-                      <DeleteIcon />
+                      {liked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                     </IconButton>
+                    <Typography variant="body2" color="text.secondary">
+                      {photo.likes?.length || 0}
+                    </Typography>
+                    <IconButton 
+                      aria-label="comments"
+                      onClick={() => toggleComments(photo._id)}
+                      sx={{ ml: 1 }}
+                    >
+                      <ChatBubbleOutlineIcon />
+                    </IconButton>
+                    <Typography variant="body2" color="text.secondary">
+                      {photo.comments?.length || 0}
+                    </Typography>
+                    
+                    {(currentUser && photo.user && (photo.user._id === currentUser._id || photo.user === currentUser._id)) && (
+                      <IconButton 
+                        aria-label="delete"
+                        onClick={() => handleDeletePhoto(photo._id)}
+                        sx={{ ml: 'auto' }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    )}
+                  </CardActions>
+                  
+                  {commentsVisible[photo._id] && (
+                    <Box sx={{ p: 2, pt: 0 }}>
+                      <CommentList 
+                        comments={photo.comments} 
+                        photoId={photo._id}
+                        currentUser={currentUser}
+                        onDeleteComment={handleDeleteComment}
+                      />
+                      <CommentForm 
+                        photoId={photo._id} 
+                        onAddComment={handleAddComment}
+                        showAlert={showAlert}
+                      />
+                    </Box>
                   )}
-                </CardActions>
-                
-                {commentsVisible[photo._id] && (
-                  <Box sx={{ p: 2, pt: 0 }}>
-                    <CommentList 
-                      comments={photo.comments} 
-                      photoId={photo._id}
-                      currentUser={currentUser}
-                      onDeleteComment={handleDeleteComment}
-                    />
-                    <CommentForm 
-                      photoId={photo._id} 
-                      onAddComment={handleAddComment}
-                      showAlert={showAlert}
-                    />
-                  </Box>
-                )}
-              </Card>
-            </Grid>
-          ))}
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       )}
     </Box>
