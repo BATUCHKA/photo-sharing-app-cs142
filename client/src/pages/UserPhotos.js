@@ -1,10 +1,10 @@
-// client/src/pages/UserPhotos.js
+
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
-// Material UI
+
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
@@ -19,14 +19,14 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 
-// Icons
+
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-// Components
+
 import CommentList from '../components/comments/CommentList';
 import CommentForm from '../components/comments/CommentForm';
 
@@ -37,95 +37,94 @@ const UserPhotos = ({ showAlert }) => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [commentsVisible, setCommentsVisible] = useState({});
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch user info and photos in parallel
+
         const [userRes, photosRes] = await Promise.all([
           axios.get(`/users/${id}`),
           axios.get(`/photos/user/${id}`)
         ]);
-        
+
         setUserInfo(userRes.data.user);
         setPhotos(photosRes.data);
-        
-        // For debugging purposes
+
         console.log('Current user:', currentUser);
         console.log('Fetched photos:', photosRes.data);
-        
+
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
         showAlert(
-          err.response?.data?.error || 'Error fetching user photos', 
+          err.response?.data?.error || 'Error fetching user photos',
           'error'
         );
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [id, showAlert, currentUser]);
-  
-  // Toggle comments visibility for a photo
+
+
   const toggleComments = (photoId) => {
     setCommentsVisible(prev => ({
       ...prev,
       [photoId]: !prev[photoId]
     }));
   };
-  
-  // Handle like/unlike
+
+
   const handleLikeToggle = async (photoId, isLiked) => {
     try {
       let res;
-      
+
       if (isLiked) {
-        // Unlike
+
         console.log('Unliking photo:', photoId);
         res = await axios.delete(`/photos/${photoId}/like`);
       } else {
-        // Like
+
         console.log('Liking photo:', photoId);
         res = await axios.post(`/photos/${photoId}/like`);
       }
-      
+
       console.log('Like toggle response:', res.data);
-      
-      // Update the photos state with the updated photo
-      setPhotos(photos.map(photo => 
+
+
+      setPhotos(photos.map(photo =>
         photo._id === photoId ? res.data : photo
       ));
     } catch (err) {
       console.error('Error toggling like:', err);
       showAlert(
-        err.response?.data?.error || 'Error toggling like', 
+        err.response?.data?.error || 'Error toggling like',
         'error'
       );
     }
   };
-  
-  // Handle delete photo
+
+
   const handleDeletePhoto = async (photoId) => {
     if (window.confirm('Are you sure you want to delete this photo?')) {
       try {
         await axios.delete(`/photos/${photoId}`);
-        
-        // Remove the photo from the list
+
+
         setPhotos(photos.filter(photo => photo._id !== photoId));
         showAlert('Photo deleted successfully', 'success');
       } catch (err) {
         console.error('Error deleting photo:', err);
         showAlert(
-          err.response?.data?.error || 'Error deleting photo', 
+          err.response?.data?.error || 'Error deleting photo',
           'error'
         );
       }
     }
   };
-  
-  // Add a comment
+
+
   const handleAddComment = (photoId, newComment) => {
     setPhotos(photos.map(photo => {
       if (photo._id === photoId) {
@@ -137,13 +136,13 @@ const UserPhotos = ({ showAlert }) => {
       return photo;
     }));
   };
-  
-  // Delete a comment
+
+
   const handleDeleteComment = async (commentId, photoId) => {
     try {
       await axios.delete(`/comments/${commentId}`);
-      
-      // Update the photos state by removing the deleted comment
+
+
       setPhotos(photos.map(photo => {
         if (photo._id === photoId) {
           return {
@@ -153,48 +152,48 @@ const UserPhotos = ({ showAlert }) => {
         }
         return photo;
       }));
-      
+
       showAlert('Comment deleted successfully', 'success');
     } catch (err) {
       console.error('Error deleting comment:', err);
       showAlert(
-        err.response?.data?.error || 'Error deleting comment', 
+        err.response?.data?.error || 'Error deleting comment',
         'error'
       );
     }
   };
-  
-  // Check if a photo is liked by the current user
+
+
   const isPhotoLikedByUser = (photo) => {
-    // Make sure currentUser exists and photo.likes is an array
+
     if (!currentUser || !photo.likes || !Array.isArray(photo.likes)) {
       return false;
     }
-    
-    // Check if the current user's ID is in the likes array
-    // Some photos might store like objects with user field, others might store just IDs
-    return photo.likes.some(like => 
-      // Handle both cases: like is an object with user field OR like is directly a user ID
-      (like._id === currentUser._id) ||            // If like is user object
+
+
+
+    return photo.likes.some(like =>
+
+      (like._id === currentUser._id) ||
       (like.user && like.user === currentUser._id) || // If like has separate user field
       (like.user && like.user._id === currentUser._id) || // If like.user is an object
-      (like === currentUser._id)                  // If like is just the user ID string
+      (like === currentUser._id)
     );
   };
-  
+
   if (loading) {
     return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
         minHeight="80vh"
       >
         <CircularProgress />
       </Box>
     );
   }
-  
+
   if (!userInfo) {
     return (
       <Box sx={{ p: 3 }}>
@@ -204,30 +203,30 @@ const UserPhotos = ({ showAlert }) => {
       </Box>
     );
   }
-  
+
   return (
     <Box sx={{ flexGrow: 1, p: 3, mt: 2 }}>
       <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Button 
-            component={Link} 
+          <Button
+            component={Link}
             to={`/users/${id}`}
             startIcon={<ArrowBackIcon />}
             sx={{ mr: 2 }}
           >
             Back to Profile
           </Button>
-          
+
           <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
             {userInfo.firstName[0]}{userInfo.lastName[0]}
           </Avatar>
-          
+
           <Typography variant="h5" component="h1">
             {userInfo.firstName} {userInfo.lastName}'s Photos
           </Typography>
         </Box>
       </Paper>
-      
+
       {photos.length === 0 ? (
         <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>
           No photos to display.
@@ -235,11 +234,11 @@ const UserPhotos = ({ showAlert }) => {
       ) : (
         <Grid container spacing={4}>
           {photos.map(photo => {
-            // Debug info about the photo likes
+
             const liked = isPhotoLikedByUser(photo);
             console.log(`Photo ${photo._id} liked status:`, liked);
             console.log(`Photo ${photo._id} likes:`, photo.likes);
-            
+
             return (
               <Grid item xs={12} sm={6} md={4} key={photo._id}>
                 <Card sx={{ maxWidth: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -248,7 +247,7 @@ const UserPhotos = ({ showAlert }) => {
                     height="300"
                     image={`http://localhost:3000${photo.file}`}
                     alt={photo.caption}
-                    sx={{ 
+                    sx={{
                       objectFit: 'cover',
                       backgroundColor: 'rgba(0,0,0,0.05)'
                     }}
@@ -266,7 +265,7 @@ const UserPhotos = ({ showAlert }) => {
                     </Typography>
                   </CardContent>
                   <CardActions disableSpacing>
-                    <IconButton 
+                    <IconButton
                       aria-label={liked ? 'unlike' : 'like'}
                       onClick={() => handleLikeToggle(photo._id, liked)}
                       color={liked ? 'secondary' : 'default'}
@@ -276,7 +275,7 @@ const UserPhotos = ({ showAlert }) => {
                     <Typography variant="body2" color="text.secondary">
                       {photo.likes?.length || 0}
                     </Typography>
-                    <IconButton 
+                    <IconButton
                       aria-label="comments"
                       onClick={() => toggleComments(photo._id)}
                       sx={{ ml: 1 }}
@@ -286,9 +285,9 @@ const UserPhotos = ({ showAlert }) => {
                     <Typography variant="body2" color="text.secondary">
                       {photo.comments?.length || 0}
                     </Typography>
-                    
+
                     {(currentUser && photo.user && (photo.user._id === currentUser._id || photo.user === currentUser._id)) && (
-                      <IconButton 
+                      <IconButton
                         aria-label="delete"
                         onClick={() => handleDeletePhoto(photo._id)}
                         sx={{ ml: 'auto' }}
@@ -297,17 +296,17 @@ const UserPhotos = ({ showAlert }) => {
                       </IconButton>
                     )}
                   </CardActions>
-                  
+
                   {commentsVisible[photo._id] && (
                     <Box sx={{ p: 2, pt: 0 }}>
-                      <CommentList 
-                        comments={photo.comments} 
+                      <CommentList
+                        comments={photo.comments}
                         photoId={photo._id}
                         currentUser={currentUser}
                         onDeleteComment={handleDeleteComment}
                       />
-                      <CommentForm 
-                        photoId={photo._id} 
+                      <CommentForm
+                        photoId={photo._id}
                         onAddComment={handleAddComment}
                         showAlert={showAlert}
                       />

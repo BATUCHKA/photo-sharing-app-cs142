@@ -1,9 +1,9 @@
-// client/src/pages/Register.js
+
 import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
-// Material UI
+
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -17,7 +17,7 @@ import Paper from '@mui/material/Paper';
 const Register = ({ showAlert }) => {
   const { register, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -28,7 +28,7 @@ const Register = ({ showAlert }) => {
     occupation: '',
     description: ''
   });
-  
+
   const [formErrors, setFormErrors] = useState({
     firstName: '',
     lastName: '',
@@ -39,33 +39,33 @@ const Register = ({ showAlert }) => {
     occupation: '',
     description: ''
   });
-  
-  const { 
-    firstName, 
-    lastName, 
-    username, 
-    password, 
+
+  const {
+    firstName,
+    lastName,
+    username,
+    password,
     password2,
     location,
     occupation,
     description
   } = formData;
-  
-  // Redirect if already authenticated
+
+
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/home');
     }
   }, [isAuthenticated, navigate]);
-  
+
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({ ...formErrors, [e.target.name]: '' }); // Clear error when typing
+    setFormErrors({ ...formErrors, [e.target.name]: '' });
   };
-  
+
   const validateForm = () => {
     let valid = true;
-    const errors = { 
+    const errors = {
       firstName: '',
       lastName: '',
       username: '',
@@ -75,17 +75,17 @@ const Register = ({ showAlert }) => {
       occupation: '',
       description: ''
     };
-    
+
     if (!firstName.trim()) {
       errors.firstName = 'First name is required';
       valid = false;
     }
-    
+
     if (!lastName.trim()) {
       errors.lastName = 'Last name is required';
       valid = false;
     }
-    
+
     if (!username.trim()) {
       errors.username = 'Username is required';
       valid = false;
@@ -93,7 +93,7 @@ const Register = ({ showAlert }) => {
       errors.username = 'Username must be at least 3 characters';
       valid = false;
     }
-    
+
     if (!password) {
       errors.password = 'Password is required';
       valid = false;
@@ -101,23 +101,23 @@ const Register = ({ showAlert }) => {
       errors.password = 'Password must be at least 6 characters';
       valid = false;
     }
-    
+
     if (password !== password2) {
       errors.password2 = 'Passwords do not match';
       valid = false;
     }
-    
+
     setFormErrors(errors);
     return valid;
   };
-  
+
   const onSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     const newUser = {
       firstName,
       lastName,
@@ -127,9 +127,9 @@ const Register = ({ showAlert }) => {
       occupation,
       description
     };
-    
+
     const result = await register(newUser);
-    
+
     if (!result.success) {
       showAlert(result.error, 'error');
     } else {
@@ -137,7 +137,7 @@ const Register = ({ showAlert }) => {
       navigate('/home');
     }
   };
-  
+
   return (
     <Container component="main" maxWidth="sm">
       <Paper elevation={3} sx={{ p: 4, mt: 8 }}>

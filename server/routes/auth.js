@@ -1,24 +1,24 @@
-// server/routes/auth.js
+
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs'); // Add this import for direct password comparison
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Activity = require('../models/Activity');
 const auth = require('../middleware/auth');
 
-// Register a new user
+
 router.post('/register', async (req, res) => {
   try {
     const { firstName, lastName, username, password, location, occupation, description } = req.body;
 
-    // Check if username exists
+
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
-    // Create new user
+
     const user = new User({
       firstName,
       lastName,
@@ -31,7 +31,6 @@ router.post('/register', async (req, res) => {
 
     await user.save();
 
-    // Create activity for user registration
     const activity = new Activity({
       user: user._id,
       type: 'USER_REGISTERED',
@@ -39,11 +38,11 @@ router.post('/register', async (req, res) => {
 
     await activity.save();
 
-    // Update user's last activity
+
     user.lastActivity = activity._id;
     await user.save();
 
-    // Generate JWT token
+
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET || 'yourSecretKeyHere',
@@ -54,7 +53,7 @@ router.post('/register', async (req, res) => {
       token,
       user: {
         id: user._id,
-        _id: user._id, // Add this to match the format expected by the frontend
+        _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         username: user.username,
@@ -69,13 +68,13 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login user
+
 router.post('/login', async (req, res) => {
   try {
-    console.log('Login attempt:', req.body.username); // Log for debugging
+    console.log('Login attempt:', req.body.username);
     const { username, password } = req.body;
 
-    // Find user
+
     const user = await User.findOne({ username });
     if (!user) {
       console.log('User not found:', username);
@@ -84,10 +83,10 @@ router.post('/login', async (req, res) => {
 
     console.log(user, "hello?")
 
-    // Check password - Use both methods for compatibility
+
     let isMatch = false;
 
-    // Method 1: Use the User model's method if available
+
     if (typeof user.comparePassword === 'function') {
       try {
         isMatch = await user.comparePassword(password);
@@ -96,7 +95,7 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    // Method 2: Direct comparison as fallback
+
     if (!isMatch) {
       isMatch = await bcrypt.compare(password, user.password);
     }
@@ -108,7 +107,7 @@ router.post('/login', async (req, res) => {
 
     console.log('Login successful for user:', username);
 
-    // Create activity for user login
+
     const activity = new Activity({
       user: user._id,
       type: 'USER_LOGIN',
@@ -116,11 +115,11 @@ router.post('/login', async (req, res) => {
 
     await activity.save();
 
-    // Update user's last activity
+
     user.lastActivity = activity._id;
     await user.save();
 
-    // Generate JWT token
+
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET || 'yourSecretKeyHere',
@@ -131,7 +130,7 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: user._id,
-        _id: user._id, // Include both formats for compatibility
+        _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         username: user.username,
@@ -146,10 +145,10 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Logout user
+
 router.post('/logout', auth, async (req, res) => {
   try {
-    // Create activity for user logout
+
     const activity = new Activity({
       user: req.user.id,
       type: 'USER_LOGOUT',
@@ -157,7 +156,7 @@ router.post('/logout', auth, async (req, res) => {
 
     await activity.save();
 
-    // Update user's last activity
+
     const user = await User.findById(req.user.id);
     if (user) {
       user.lastActivity = activity._id;
@@ -171,7 +170,7 @@ router.post('/logout', auth, async (req, res) => {
   }
 });
 
-// Get current user profile
+
 router.get('/profile', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');

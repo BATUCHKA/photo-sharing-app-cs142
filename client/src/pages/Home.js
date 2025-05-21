@@ -1,10 +1,10 @@
-// client/src/pages/Home.js
+
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
-// Material UI
+
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
@@ -33,7 +33,7 @@ import Switch from '@mui/material/Switch';
 import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
 
-// Icons
+
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
@@ -45,7 +45,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 
-// Components
+
 import CommentList from '../components/comments/CommentList';
 import CommentForm from '../components/comments/CommentForm';
 
@@ -61,19 +61,19 @@ const Home = ({ showAlert }) => {
   const [sharedWith, setSharedWith] = useState([]);
   const [commentsVisible, setCommentsVisible] = useState({});
   const [error, setError] = useState(null);
-  
-  // Effect to fetch photos and users when component mounts
+
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         const [photosRes, usersRes] = await Promise.all([
           axios.get('/photos'),
           axios.get('/users')
         ]);
-        
+
         setPhotos(photosRes.data);
         setUsers(usersRes.data);
         setLoading(false);
@@ -84,37 +84,37 @@ const Home = ({ showAlert }) => {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [showAlert]);
-  
-  // Handle file input change
+
+
   const handleFileChange = (e) => {
     setPhotoFile(e.target.files[0]);
   };
-  
-  // Handle caption change
+
+
   const handleCaptionChange = (e) => {
     setCaption(e.target.value);
   };
-  
-  // Handle visibility control toggle
+
+
   const handleVisibilityControlToggle = (e) => {
     setUseVisibilityControl(e.target.checked);
-    
-    // If turning off visibility control, clear shared users
+
+
     if (!e.target.checked) {
       setSharedWith([]);
     }
   };
-  
-  // Handle shared users change
+
+
   const handleSharedUsersChange = (event) => {
     const { value } = event.target;
     setSharedWith(value);
   };
-  
-  // Open upload dialog
+
+
   const openUploadDialog = () => {
     setUploadDialogOpen(true);
     setPhotoFile(null);
@@ -122,28 +122,28 @@ const Home = ({ showAlert }) => {
     setUseVisibilityControl(false);
     setSharedWith([]);
   };
-  
-  // Close upload dialog
+
+
   const closeUploadDialog = () => {
     setUploadDialogOpen(false);
   };
-  
-  // Handle photo upload
+
+
   const handleUpload = async () => {
     if (!photoFile) {
       showAlert('Please select a photo', 'error');
       return;
     }
-    
+
     const formData = new FormData();
     formData.append('photo', photoFile);
     formData.append('caption', caption);
-    
-    // Add shared users if visibility control is enabled
+
+
     if (useVisibilityControl) {
       formData.append('sharedWith', JSON.stringify(sharedWith));
     }
-    
+
     try {
       setLoading(true);
       const res = await axios.post('/photos', formData, {
@@ -151,76 +151,76 @@ const Home = ({ showAlert }) => {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
-      // Add the new photo to the list
+
+
       setPhotos([res.data, ...photos]);
       showAlert('Photo uploaded successfully', 'success');
       closeUploadDialog();
     } catch (err) {
       console.error('Error uploading photo:', err);
       showAlert(
-        err.response?.data?.error || 'Error uploading photo', 
+        err.response?.data?.error || 'Error uploading photo',
         'error'
       );
     } finally {
       setLoading(false);
     }
   };
-  
-  // Toggle comments visibility for a photo
+
+
   const toggleComments = (photoId) => {
     setCommentsVisible(prev => ({
       ...prev,
       [photoId]: !prev[photoId]
     }));
   };
-  
-  // Handle like/unlike
+
+
   const handleLikeToggle = async (photoId, isLiked) => {
     try {
       let res;
-      
+
       if (isLiked) {
-        // Unlike
+
         res = await axios.delete(`/photos/${photoId}/like`);
       } else {
-        // Like
+
         res = await axios.post(`/photos/${photoId}/like`);
       }
-      
-      // Update the photos state with the updated photo
-      setPhotos(photos.map(photo => 
+
+
+      setPhotos(photos.map(photo =>
         photo._id === photoId ? res.data : photo
       ));
     } catch (err) {
       console.error('Error toggling like:', err);
       showAlert(
-        err.response?.data?.error || 'Error toggling like', 
+        err.response?.data?.error || 'Error toggling like',
         'error'
       );
     }
   };
-  
-  // Handle delete photo
+
+
   const handleDeletePhoto = async (photoId) => {
     if (window.confirm('Are you sure you want to delete this photo?')) {
       try {
         await axios.delete(`/photos/${photoId}`);
-        
-        // Remove the photo from the list
+
+
         setPhotos(photos.filter(photo => photo._id !== photoId));
         showAlert('Photo deleted successfully', 'success');
       } catch (err) {
         console.error('Error deleting photo:', err);
         showAlert(
-          err.response?.data?.error || 'Error deleting photo', 
+          err.response?.data?.error || 'Error deleting photo',
           'error'
         );
       }
     }
   };
-  
-  // Add a comment
+
+
   const handleAddComment = (photoId, newComment) => {
     setPhotos(photos.map(photo => {
       if (photo._id === photoId) {
@@ -232,13 +232,13 @@ const Home = ({ showAlert }) => {
       return photo;
     }));
   };
-  
-  // Delete a comment
+
+
   const handleDeleteComment = async (commentId, photoId) => {
     try {
       await axios.delete(`/comments/${commentId}`);
-      
-      // Update the photos state by removing the deleted comment
+
+
       setPhotos(photos.map(photo => {
         if (photo._id === photoId) {
           return {
@@ -248,18 +248,18 @@ const Home = ({ showAlert }) => {
         }
         return photo;
       }));
-      
+
       showAlert('Comment deleted successfully', 'success');
     } catch (err) {
       console.error('Error deleting comment:', err);
       showAlert(
-        err.response?.data?.error || 'Error deleting comment', 
+        err.response?.data?.error || 'Error deleting comment',
         'error'
       );
     }
   };
-  
-  // Add to favorites
+
+
   const handleAddToFavorites = async (photoId) => {
     try {
       await axios.post(`/users/favorites/${photoId}`);
@@ -267,18 +267,18 @@ const Home = ({ showAlert }) => {
     } catch (err) {
       console.error('Error adding to favorites:', err);
       showAlert(
-        err.response?.data?.error || 'Error adding to favorites', 
+        err.response?.data?.error || 'Error adding to favorites',
         'error'
       );
     }
   };
-  
-  // Check if a photo is liked by the current user
+
+
   const isPhotoLikedByUser = (photo) => {
     return photo.likes?.some(like => like._id === user?._id);
   };
-  
-  // Get visibility icon based on sharing settings
+
+
   const getVisibilityIcon = (photo) => {
     if (!photo.sharedWith || photo.sharedWith.length === 0) {
       return <VisibilityIcon fontSize="small" />;
@@ -288,8 +288,8 @@ const Home = ({ showAlert }) => {
       return <VisibilityOffIcon fontSize="small" />;
     }
   };
-  
-  // Get visibility text based on sharing settings
+
+
   const getVisibilityText = (photo) => {
     if (!photo.sharedWith || photo.sharedWith.length === 0) {
       return 'Public';
@@ -299,28 +299,28 @@ const Home = ({ showAlert }) => {
       return 'Private';
     }
   };
-  
+
   if (loading) {
     return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
         minHeight="80vh"
       >
         <CircularProgress />
       </Box>
     );
   }
-  
+
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          mb: 3 
+          mb: 3
         }}
       >
         <Typography variant="h4" component="h1">
@@ -335,13 +335,13 @@ const Home = ({ showAlert }) => {
           Upload Photo
         </Button>
       </Box>
-      
+
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
-      
+
       {photos.length === 0 ? (
         <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>
           No photos to display.
@@ -359,7 +359,7 @@ const Home = ({ showAlert }) => {
                   }
                   action={
                     photo.user._id === user?._id && (
-                      <IconButton 
+                      <IconButton
                         aria-label="delete"
                         onClick={() => handleDeletePhoto(photo._id)}
                       >
@@ -368,8 +368,8 @@ const Home = ({ showAlert }) => {
                     )
                   }
                   title={
-                    <Link 
-                      to={`/users/${photo.user._id}`} 
+                    <Link
+                      to={`/users/${photo.user._id}`}
                       style={{ textDecoration: 'none', color: 'inherit' }}
                     >
                       {photo.user.firstName} {photo.user.lastName}
@@ -400,7 +400,7 @@ const Home = ({ showAlert }) => {
                   </Typography>
                 </CardContent>
                 <CardActions disableSpacing>
-                  <IconButton 
+                  <IconButton
                     aria-label="add to favorites"
                     onClick={() => handleLikeToggle(photo._id, isPhotoLikedByUser(photo))}
                     color={isPhotoLikedByUser(photo) ? 'secondary' : 'default'}
@@ -414,7 +414,7 @@ const Home = ({ showAlert }) => {
                   <Typography variant="body2" color="text.secondary">
                     {photo.likes?.length || 0}
                   </Typography>
-                  <IconButton 
+                  <IconButton
                     aria-label="comments"
                     onClick={() => toggleComments(photo._id)}
                     sx={{ ml: 1 }}
@@ -424,7 +424,7 @@ const Home = ({ showAlert }) => {
                   <Typography variant="body2" color="text.secondary">
                     {photo.comments?.length || 0}
                   </Typography>
-                  
+
                   {/* Add to favorites button */}
                   {photo.user._id !== user?._id && (
                     <IconButton
@@ -437,17 +437,17 @@ const Home = ({ showAlert }) => {
                     </IconButton>
                   )}
                 </CardActions>
-                
+
                 {commentsVisible[photo._id] && (
                   <Box sx={{ p: 2, pt: 0 }}>
-                    <CommentList 
-                      comments={photo.comments} 
+                    <CommentList
+                      comments={photo.comments}
                       photoId={photo._id}
                       currentUser={user}
                       onDeleteComment={handleDeleteComment}
                     />
-                    <CommentForm 
-                      photoId={photo._id} 
+                    <CommentForm
+                      photoId={photo._id}
                       onAddComment={handleAddComment}
                       showAlert={showAlert}
                     />
@@ -458,7 +458,7 @@ const Home = ({ showAlert }) => {
           ))}
         </Grid>
       )}
-      
+
       {/* Upload Dialog */}
       <Dialog open={uploadDialogOpen} onClose={closeUploadDialog}>
         <DialogTitle>Upload Photo</DialogTitle>
@@ -478,13 +478,13 @@ const Home = ({ showAlert }) => {
                 onChange={handleFileChange}
               />
             </Button>
-            
+
             {photoFile && (
               <Typography variant="body2" sx={{ mb: 2 }}>
                 Selected file: {photoFile.name}
               </Typography>
             )}
-            
+
             <TextField
               margin="normal"
               fullWidth
@@ -496,7 +496,7 @@ const Home = ({ showAlert }) => {
               value={caption}
               onChange={handleCaptionChange}
             />
-            
+
             <FormControlLabel
               control={
                 <Switch
@@ -508,12 +508,12 @@ const Home = ({ showAlert }) => {
               label="Restrict who can see this photo"
               sx={{ mt: 2, mb: 1 }}
             />
-            
+
             {useVisibilityControl && (
               <FormControl fullWidth sx={{ mt: 1 }}>
                 <InputLabel id="shared-with-label">
-                  {sharedWith.length === 0 
-                    ? 'Only you can see this photo' 
+                  {sharedWith.length === 0
+                    ? 'Only you can see this photo'
                     : 'Share with specific users'}
                 </InputLabel>
                 <Select
@@ -528,9 +528,9 @@ const Home = ({ showAlert }) => {
                       {selected.map((userId) => {
                         const selectedUser = users.find(u => u._id === userId);
                         return (
-                          <Chip 
-                            key={userId} 
-                            label={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : userId} 
+                          <Chip
+                            key={userId}
+                            label={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : userId}
                           />
                         );
                       })}
@@ -547,8 +547,8 @@ const Home = ({ showAlert }) => {
                   ))}
                 </Select>
                 <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
-                  {sharedWith.length === 0 
-                    ? 'If you don\'t select any users, only you will be able to see this photo.' 
+                  {sharedWith.length === 0
+                    ? 'If you don\'t select any users, only you will be able to see this photo.'
                     : `This photo will be visible to you and ${sharedWith.length} selected user${sharedWith.length > 1 ? 's' : ''}.`}
                 </Typography>
               </FormControl>
@@ -557,9 +557,9 @@ const Home = ({ showAlert }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeUploadDialog}>Cancel</Button>
-          <Button 
-            onClick={handleUpload} 
-            variant="contained" 
+          <Button
+            onClick={handleUpload}
+            variant="contained"
             disabled={!photoFile}
           >
             Upload

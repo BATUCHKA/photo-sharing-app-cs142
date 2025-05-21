@@ -1,10 +1,10 @@
-// client/src/pages/UserDetail.js
+//
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
-// Material UI
+
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
@@ -25,7 +25,7 @@ import CardActionArea from '@mui/material/CardActionArea';
 import Alert from '@mui/material/Alert';
 import Container from '@mui/material/Container';
 
-// Icons
+
 import PersonIcon from '@mui/icons-material/Person';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import WorkIcon from '@mui/icons-material/Work';
@@ -51,16 +51,15 @@ const UserDetail = ({ showAlert }) => {
         setLoading(true);
         setError(null);
 
-        // Fetch user data and mentioned photos in parallel
         const [userRes, mentionedPhotosRes] = await Promise.all([
           axios.get(`/users/${id}`),
-          axios.get(`/users/${id}/mentioned`) // New endpoint to get photos where user is mentioned
+          axios.get(`/users/${id}/mentioned`)
         ]);
 
         console.log('User data response:', userRes.data);
         console.log('Mentioned photos response:', mentionedPhotosRes.data);
 
-        // Update state with both user data and mentioned photos
+
         setUserData({
           ...userRes.data,
           mentionedPhotos: mentionedPhotosRes.data
@@ -106,7 +105,7 @@ const UserDetail = ({ showAlert }) => {
         justifyContent="center"
         alignItems="center"
         minHeight="80vh"
-        mt={10} // Added margin top to account for navbar
+        mt={10}
       >
         <CircularProgress />
       </Box>
@@ -115,7 +114,7 @@ const UserDetail = ({ showAlert }) => {
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 10 }}> {/* Added margin top */}
+      <Container maxWidth="lg" sx={{ mt: 10 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
@@ -128,7 +127,7 @@ const UserDetail = ({ showAlert }) => {
 
   if (!userData || !userData.user) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 10 }}> {/* Added margin top */}
+      <Container maxWidth="lg" sx={{ mt: 10 }}>
         <Typography variant="h5" color="error">
           User not found
         </Typography>
@@ -143,7 +142,7 @@ const UserDetail = ({ showAlert }) => {
   const isOwnProfile = currentUser?._id === userInfo._id;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 10 }}> {/* Added margin top and Container for better layout */}
+    <Container maxWidth="lg" sx={{ mt: 10 }}>
       <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'center', sm: 'flex-start' } }}>
           <Avatar
@@ -380,7 +379,6 @@ const UserDetail = ({ showAlert }) => {
         </Grid>
       </Grid>
 
-      {/* Confirm Delete Dialog */}
       <Dialog
         open={confirmDialogOpen}
         onClose={() => setConfirmDialogOpen(false)}

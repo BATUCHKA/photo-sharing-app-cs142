@@ -1,9 +1,9 @@
-// client/src/pages/Favorites.js
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-// Material UI
+
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -16,7 +16,7 @@ import IconButton from '@mui/material/IconButton';
 import Modal from '@mui/material/Modal';
 import Paper from '@mui/material/Paper';
 
-// Icons
+
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -41,7 +41,7 @@ const Favorites = ({ showAlert }) => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
-  
+
   useEffect(() => {
     const fetchFavorites = async () => {
       try {
@@ -51,57 +51,57 @@ const Favorites = ({ showAlert }) => {
       } catch (err) {
         console.error('Error fetching favorites:', err);
         showAlert(
-          err.response?.data?.error || 'Error fetching favorites', 
+          err.response?.data?.error || 'Error fetching favorites',
           'error'
         );
         setLoading(false);
       }
     };
-    
+
     fetchFavorites();
   }, [showAlert]);
-  
+
   const handleOpenModal = (photo) => {
     setSelectedPhoto(photo);
     setModalOpen(true);
   };
-  
+
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedPhoto(null);
   };
-  
+
   const handleRemoveFavorite = async (photoId, e) => {
-    e.stopPropagation(); // Prevent opening the modal
-    
+    e.stopPropagation();
+
     try {
       await axios.delete(`/users/favorites/${photoId}`);
-      
-      // Remove from favorites list
+
+
       setFavorites(favorites.filter(photo => photo._id !== photoId));
       showAlert('Photo removed from favorites', 'success');
     } catch (err) {
       console.error('Error removing from favorites:', err);
       showAlert(
-        err.response?.data?.error || 'Error removing from favorites', 
+        err.response?.data?.error || 'Error removing from favorites',
         'error'
       );
     }
   };
-  
+
   if (loading) {
     return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
         minHeight="80vh"
       >
         <CircularProgress />
       </Box>
     );
   }
-  
+
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
       <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
@@ -109,7 +109,7 @@ const Favorites = ({ showAlert }) => {
           Favorite Photos
         </Typography>
       </Paper>
-      
+
       {favorites.length === 0 ? (
         <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>
           You haven't favorited any photos yet.
@@ -118,9 +118,9 @@ const Favorites = ({ showAlert }) => {
         <Grid container spacing={3}>
           {favorites.map(photo => (
             <Grid item xs={6} sm={4} md={3} key={photo._id}>
-              <Card 
-                sx={{ 
-                  maxWidth: '100%', 
+              <Card
+                sx={{
+                  maxWidth: '100%',
                   position: 'relative',
                   '&:hover .remove-btn': {
                     opacity: 1,
@@ -136,9 +136,9 @@ const Favorites = ({ showAlert }) => {
                   />
                   <IconButton
                     className="remove-btn"
-                    sx={{ 
-                      position: 'absolute', 
-                      top: 8, 
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
                       right: 8,
                       backgroundColor: 'rgba(0,0,0,0.5)',
                       color: 'white',
@@ -167,7 +167,7 @@ const Favorites = ({ showAlert }) => {
           ))}
         </Grid>
       )}
-      
+
       {/* Photo Modal */}
       <Modal
         open={modalOpen}
@@ -180,10 +180,10 @@ const Favorites = ({ showAlert }) => {
               <CloseIcon />
             </IconButton>
           </Box>
-          
+
           {selectedPhoto && (
             <>
-              <Box 
+              <Box
                 component="img"
                 sx={{
                   maxWidth: '100%',
@@ -193,16 +193,16 @@ const Favorites = ({ showAlert }) => {
                 src={`http://localhost:3000${selectedPhoto.file}`}
                 alt={selectedPhoto.caption}
               />
-              
+
               <Box sx={{ mt: 2, width: '100%' }}>
                 <Typography variant="body1" sx={{ mb: 1 }}>
                   {selectedPhoto.caption}
                 </Typography>
-                
+
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="text.secondary">
                     By{' '}
-                    <Link 
+                    <Link
                       to={`/users/${selectedPhoto.user._id}`}
                       onClick={handleCloseModal}
                       style={{ textDecoration: 'none' }}
@@ -210,7 +210,7 @@ const Favorites = ({ showAlert }) => {
                       {selectedPhoto.user.firstName} {selectedPhoto.user.lastName}
                     </Link>
                   </Typography>
-                  
+
                   <Typography variant="body2" color="text.secondary">
                     {new Date(selectedPhoto.dateUploaded).toLocaleString()}
                   </Typography>

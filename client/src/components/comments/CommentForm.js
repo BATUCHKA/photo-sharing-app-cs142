@@ -1,8 +1,8 @@
-// client/src/components/comments/CommentForm.js
+
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-// Material UI
+
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -20,7 +20,7 @@ import Popper from '@mui/material/Popper';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Divider from '@mui/material/Divider';
 
-// Icons
+
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 
 const CommentForm = ({ photoId, onAddComment, showAlert }) => {
@@ -30,15 +30,15 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
   const [mentionedUsers, setMentionedUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [error, setError] = useState(null);
-  
-  // Mention dropdown state
+
+
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionResults, setMentionResults] = useState([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(null);
   const textFieldRef = useRef(null);
-  
-  // Fetch all users for mentions
+
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -53,34 +53,34 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
         setLoadingUsers(false);
       }
     };
-    
+
     fetchUsers();
   }, []);
-  
-  // Handle text change and @mention detection
+
+
   const handleTextChange = (e) => {
     const newText = e.target.value;
     setText(newText);
-    
-    // Get cursor position
+
+
     const cursorPos = e.target.selectionStart;
-    
-    // Find @ symbol before cursor
+
+
     const textBeforeCursor = newText.substring(0, cursorPos);
     const atIndex = textBeforeCursor.lastIndexOf('@');
-    
+
     if (atIndex !== -1 && (atIndex === 0 || textBeforeCursor[atIndex - 1] === ' ')) {
-      // Get text between @ and cursor
+
       const searchText = textBeforeCursor.substring(atIndex + 1);
-      
-      // Only search if there's no space in the searchText
+
+
       if (!searchText.includes(' ') && searchText.length > 0) {
         setMentionSearch(searchText);
         setCursorPosition(cursorPos);
         searchUsers(searchText);
         setShowMentionDropdown(true);
       } else if (searchText.length === 0) {
-        // Show all users if just @ is typed
+
         setMentionResults(users);
         setMentionSearch('');
         setCursorPosition(cursorPos);
@@ -92,14 +92,14 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
       setShowMentionDropdown(false);
     }
   };
-  
-  // Search users for @mention
+
+
   const searchUsers = (query) => {
     if (!query) {
       setMentionResults(users);
       return;
     }
-    
+
     const filteredUsers = users.filter(user => {
       const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
       return (
@@ -107,97 +107,97 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
         fullName.includes(query.toLowerCase())
       );
     });
-    
+
     setMentionResults(filteredUsers);
   };
-  
-  // Handle user mention selection
+
+
   const handleUserMention = (user) => {
     if (!user) return;
-    
-    // Find the @ symbol position before cursor
+
+
     const textBeforeCursor = text.substring(0, cursorPosition);
     const atIndex = textBeforeCursor.lastIndexOf('@');
-    
+
     if (atIndex !== -1) {
-      // Replace @searchText with @username
+
       const beforeAt = text.substring(0, atIndex);
       const afterCursor = text.substring(cursorPosition);
       const newText = `${beforeAt}@${user.username} ${afterCursor}`;
       setText(newText);
-      
-      // Add user to mentioned users if not already there
+
+
       if (!mentionedUsers.some(u => u._id === user._id)) {
         setMentionedUsers([...mentionedUsers, user]);
       }
-      
-      // Focus back on textarea
+
+
       if (textFieldRef.current) {
         setTimeout(() => {
           textFieldRef.current.focus();
         }, 10);
       }
     }
-    
+
     setShowMentionDropdown(false);
   };
-  
-  // Handle removing a mention chip
+
+
   const handleRemoveMention = (userId) => {
-    // Remove the mention chip
+
     const updatedMentions = mentionedUsers.filter(u => u._id !== userId);
     setMentionedUsers(updatedMentions);
-    
-    // Remove the @username from the text
+
+
     const userToRemove = mentionedUsers.find(u => u._id === userId);
     if (userToRemove) {
       const regex = new RegExp(`@${userToRemove.username}\\s`, 'g');
       setText(text.replace(regex, ''));
     }
   };
-  
-  // Handle form submission
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!text.trim()) {
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
-      // Create an array of mentioned user IDs to send to the server
+
       const mentionIds = mentionedUsers.map(user => user._id);
-      
-      const res = await axios.post(`/comments/${photoId}`, { 
+
+      const res = await axios.post(`/comments/${photoId}`, {
         text,
         mentions: mentionIds
       });
-      
-      // Clear form
+
+
       setText('');
       setMentionedUsers([]);
-      
-      // Update parent component
+
+
       onAddComment(photoId, res.data);
-      
+
       showAlert('Comment added successfully', 'success');
     } catch (err) {
       console.error('Error adding comment:', err);
       showAlert(
-        err.response?.data?.error || 'Error adding comment', 
+        err.response?.data?.error || 'Error adding comment',
         'error'
       );
     } finally {
       setLoading(false);
     }
   };
-  
-  // Render @mention dropdown
+
+
   const renderMentionDropdown = () => {
     if (!showMentionDropdown) return null;
-    
+
     return (
       <Popper
         open={showMentionDropdown}
@@ -214,13 +214,13 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
             ) : (
               mentionResults.map((user, index) => (
                 <React.Fragment key={user._id}>
-                  <ListItem 
-                    button 
+                  <ListItem
+                    button
                     onClick={() => handleUserMention(user)}
-                    sx={{ 
-                      '&:hover': { 
-                        backgroundColor: 'action.hover' 
-                      } 
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'action.hover'
+                      }
                     }}
                   >
                     <ListItemAvatar>
@@ -228,7 +228,7 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
                         {user.firstName[0]}{user.lastName[0]}
                       </Avatar>
                     </ListItemAvatar>
-                    <ListItemText 
+                    <ListItemText
                       primary={`${user.firstName} ${user.lastName}`}
                       secondary={`@${user.username}`}
                     />
@@ -242,7 +242,7 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
       </Popper>
     );
   };
-  
+
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
       {error && (
@@ -250,7 +250,7 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
           {error}
         </Alert>
       )}
-      
+
       <TextField
         fullWidth
         label="Add a comment"
@@ -264,9 +264,9 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
         inputRef={textFieldRef}
         sx={{ position: 'relative' }}
       />
-      
+
       {renderMentionDropdown()}
-      
+
       {mentionedUsers.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1, mb: 1 }}>
           <Typography variant="caption" sx={{ mr: 1, alignSelf: 'center' }}>
@@ -285,12 +285,12 @@ const CommentForm = ({ photoId, onAddComment, showAlert }) => {
           ))}
         </Box>
       )}
-      
+
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-        <Button 
-          type="submit" 
-          variant="contained" 
-          color="primary" 
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
           disabled={loading || !text.trim()}
         >
           {loading ? <CircularProgress size={24} /> : 'Post'}

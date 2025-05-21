@@ -1,9 +1,9 @@
-// client/src/pages/Login.js
+
 import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
-// Material UI
+
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -19,71 +19,71 @@ import Alert from '@mui/material/Alert';
 const Login = ({ showAlert }) => {
   const { login, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     username: '',
     password: ''
   });
-  
+
   const [formErrors, setFormErrors] = useState({
     username: '',
     password: ''
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState('');
-  
+
   const { username, password } = formData;
 
-  // Redirect if already authenticated
+
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/home');
     }
   }, [isAuthenticated, navigate]);
-  
+
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setFormErrors({ ...formErrors, [e.target.name]: '' }); // Clear error when typing
-    setError(null); // Clear general error message when typing
+    setFormErrors({ ...formErrors, [e.target.name]: '' });
+    setError(null);
   };
 
   const validateForm = () => {
     let valid = true;
     const errors = { username: '', password: '' };
-    
+
     if (!username.trim()) {
       errors.username = 'Username is required';
       valid = false;
     }
-    
+
     if (!password) {
       errors.password = 'Password is required';
       valid = false;
     }
-    
+
     setFormErrors(errors);
     return valid;
   };
-  
+
   const onSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     setDebugInfo('');
-    
+
     try {
-      // Add debug info
+
       setDebugInfo(`Attempting login with username: ${username}`);
-      
+
       const result = await login({ username, password });
-      
+
       if (!result.success) {
         setError(result.error || 'Login failed. Please check your credentials.');
         if (showAlert) {
@@ -105,7 +105,7 @@ const Login = ({ showAlert }) => {
       setLoading(false);
     }
   };
-  
+
   return (
     <Container component="main" maxWidth="xs">
       <Paper elevation={3} sx={{ p: 4, mt: 8 }}>
@@ -122,13 +122,13 @@ const Login = ({ showAlert }) => {
           <Typography component="h1" variant="h5">
             Sign in
           </Typography>
-          
+
           {error && (
             <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
               {error}
             </Alert>
           )}
-          
+
           <Box component="form" onSubmit={onSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
             <TextField
               margin="normal"
@@ -160,14 +160,14 @@ const Login = ({ showAlert }) => {
               helperText={formErrors.password}
               disabled={loading}
             />
-            
+
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
               Default accounts: johndoe / janesmith / bobjohnson
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
               Password for all: password123
             </Typography>
-            
+
             <Button
               type="submit"
               fullWidth
@@ -177,7 +177,7 @@ const Login = ({ showAlert }) => {
             >
               {loading ? <CircularProgress size={24} /> : 'Sign In'}
             </Button>
-            
+
             <Grid container justifyContent="flex-end">
               <Grid item>
                 <Link to="/register" style={{ textDecoration: 'none' }}>
@@ -187,7 +187,7 @@ const Login = ({ showAlert }) => {
                 </Link>
               </Grid>
             </Grid>
-            
+
             {debugInfo && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
                 Debug info: {debugInfo}

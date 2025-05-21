@@ -1,4 +1,4 @@
-// client/src/components/layout/Sidebar.js
+
 import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -16,7 +16,7 @@ import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
 import Chip from '@mui/material/Chip';
-import Toolbar from '@mui/material/Toolbar'; 
+import Toolbar from '@mui/material/Toolbar';
 
 import PersonIcon from '@mui/icons-material/Person';
 import PhotoIcon from '@mui/icons-material/Photo';
@@ -31,15 +31,15 @@ const Sidebar = () => {
   const { isAuthenticated, user } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [userActivities, setUserActivities] = useState({});
-  
-  // Fetch all users and their last activities
+
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const res = await axios.get('/users');
         setUsers(res.data);
-        
-        // Fetch last activity for each user
+
+
         const activities = {};
         for (const user of res.data) {
           try {
@@ -51,22 +51,22 @@ const Sidebar = () => {
             console.error(`Error fetching activity for user ${user._id}:`, err);
           }
         }
-        
+
         setUserActivities(activities);
       } catch (err) {
         console.error('Error fetching users:', err);
       }
     };
-    
+
     if (isAuthenticated) {
       fetchUsers();
     }
   }, [isAuthenticated]);
-  
-  // Function to render activity icon based on type
+
+
   const renderActivityIcon = (activity) => {
     if (!activity) return null;
-    
+
     switch (activity.type) {
       case 'PHOTO_UPLOAD':
         return <PhotoIcon color="primary" fontSize="small" />;
@@ -82,19 +82,19 @@ const Sidebar = () => {
         return null;
     }
   };
-  
-  // Format activity date to show time elapsed
+
+
   const formatActivityTime = (date) => {
     if (!date) return '';
-    
+
     const now = new Date();
     const activityDate = new Date(date);
     const diffMs = now - activityDate;
-    
+
     const diffMins = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffMins < 60) {
       return `${diffMins}m ago`;
     } else if (diffHours < 24) {
@@ -103,11 +103,11 @@ const Sidebar = () => {
       return `${diffDays}d ago`;
     }
   };
-  
+
   if (!isAuthenticated) {
     return null;
   }
-  
+
   return (
     <Drawer
       sx={{
@@ -124,13 +124,13 @@ const Sidebar = () => {
       anchor="left"
     >
       <Toolbar /> {/* This empty toolbar pushes content below the AppBar */}
-      
+
       {user && (
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <Avatar 
-              sx={{ 
-                mr: 1, 
+            <Avatar
+              sx={{
+                mr: 1,
                 bgcolor: 'primary.main',
                 width: 40,
                 height: 40
@@ -151,15 +151,15 @@ const Sidebar = () => {
           )}
         </Box>
       )}
-      
+
       <Divider />
-      
+
       <Typography variant="subtitle1" sx={{ p: 2, pb: 0 }}>
         Users
       </Typography>
-      
-      <List sx={{ 
-        maxHeight: 'calc(100vh - 250px)', // Adjust to fit the window
+
+      <List sx={{
+        maxHeight: 'calc(100vh - 250px)',
         overflowY: 'auto'
       }}>
         {users.map((u) => (
@@ -170,9 +170,9 @@ const Sidebar = () => {
                   badgeContent={renderActivityIcon(userActivities[u._id])}
                   overlap="circular"
                 >
-                  <Avatar 
-                    sx={{ 
-                      width: 32, 
+                  <Avatar
+                    sx={{
+                      width: 32,
                       height: 32,
                       bgcolor: u._id === user?._id ? 'primary.main' : 'secondary.main'
                     }}
@@ -181,11 +181,11 @@ const Sidebar = () => {
                   </Avatar>
                 </Badge>
               </ListItemIcon>
-              <ListItemText 
-                primary={`${u.firstName} ${u.lastName}`} 
+              <ListItemText
+                primary={`${u.firstName} ${u.lastName}`}
                 secondary={
-                  userActivities[u._id] 
-                    ? `${userActivities[u._id].type.replace(/_/g, ' ').toLowerCase()} ${formatActivityTime(userActivities[u._id].date)}` 
+                  userActivities[u._id]
+                    ? `${userActivities[u._id].type.replace(/_/g, ' ').toLowerCase()} ${formatActivityTime(userActivities[u._id].date)}`
                     : 'No recent activity'
                 }
                 primaryTypographyProps={{
